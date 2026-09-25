@@ -1,0 +1,21 @@
+{
+  "name": "aftermath",
+  "owner": {
+    "name": "moah0911",
+    "email": "stormshots0911@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "aftermath",
+      "source": "./",
+      "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good.",
+      "version": "0.2.0",
+      "author": {
+        "name": "moah0911"
+      },
+      "category": "productivity",
+      "keywords": ["recovery", "postmortem", "testing", "debugging", "agent-skill"],
+      "strict": true
+    }
+  ]
+}

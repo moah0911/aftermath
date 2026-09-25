@@ -1,7 +1,7 @@
 {
   "name": "aftermath",
   "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Aftermath",
   "license": "MIT",
   "skills": "../skills/",

@@ -1,5 +1,9 @@
 # Aftermath — post-failure recovery skill for AI coding agents
 
+[![skills.sh](https://skills.sh/b/moah0911/aftermath)](https://skills.sh/moah0911/aftermath)
+[![npm](https://img.shields.io/npm/v/@moah0911%2Faftermath)](https://www.npmjs.com/package/@moah0911/aftermath)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Most agent skills teach how to build. Aftermath teaches how to **stop and recover** when something already broke: a test suite goes green → red, the same error recurs, a destructive command looms, or the user says "you broke it".
 
 ## The ladder (`AFTERMATH.md`)
@@ -33,11 +37,32 @@ Switch with `/aftermath [lite|full|ultra|off]`.
 - `/aftermath-audit` — scan the diff for scope creep
 - `/aftermath-log` — append a one-line postmortem to `AFTERMATH.log`
 
-## Install (OpenCode)
+## Install
+
+Any agent (skills.sh):
+
+```bash
+npx skills add moah0911/aftermath -g -y
+```
+
+OpenCode via npm:
+
+```json
+{ "plugin": ["@moah0911/aftermath"] }
+```
+
+OpenCode via curl:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
   | bash -s --            # global: plugin + commands + skills
+```
+
+Claude Code via marketplace:
+
+```
+/plugin marketplace add moah0911/aftermath
+/plugin install aftermath@aftermath
 ```
 
 Or from a clone (same flags, plus `--source` to skip cloning):
@@ -64,14 +89,15 @@ hooks/                # shared instruction builder, mode config, signal detector
 skills/               # aftermath + test-regression + retry-loop + destructive-action
 commands/             # portable slash commands (mirrored to .opencode/commands/)
 .opencode/plugins/   # server plugin (hybrid: always-on injection + failure tripwires)
-tests/                # node:test suite (30 tests)
+scripts/              # install.js + install.sh + consistency checks
+tests/                # node:test suite (44 tests)
 ```
 
 ## Verify
 
 ```bash
-npm test        # 30 tests
-npm run check   # rule-copy alignment (AFTERMATH.md ↔ skills ↔ AGENTS.md)
+npm test        # 44 tests
+npm run check   # rule-copy + version alignment
 ```
 
 ## License
