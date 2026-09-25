@@ -35,6 +35,14 @@ Switch with `/aftermath [lite|full|ultra|off]`.
 
 ## Install (OpenCode)
 
+```bash
+git clone https://github.com/moah0911/aftermath
+node aftermath/scripts/install.js            # global: plugin + commands + skills
+node aftermath/scripts/install.js --project  # or: wire the current project only
+```
+
+Or wire manually:
+
 ```json
 { "plugin": ["./.opencode/plugins/aftermath.mjs"] }
 ```
