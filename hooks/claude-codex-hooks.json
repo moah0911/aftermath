@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$AFTERMATH_DIR/hooks/session-start.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$AFTERMATH_DIR/hooks/pre-tool-use.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

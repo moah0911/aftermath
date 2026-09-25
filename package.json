@@ -1,0 +1,21 @@
+{
+  "name": "aftermath",
+  "version": "0.1.0",
+  "description": "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good.",
+  "license": "MIT",
+  "keywords": ["opencode", "plugin", "agent-skill", "recovery", "postmortem"],
+  "files": [
+    "AFTERMATH.md",
+    "AGENTS.md",
+    "hooks/",
+    "skills/",
+    "commands/",
+    ".opencode/",
+    ".claude-plugin/",
+    ".codex-plugin/"
+  ],
+  "scripts": {
+    "test": "node --test tests/signals.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs",
+    "check": "node scripts/check-rule-copies.js"
+  }
+}
