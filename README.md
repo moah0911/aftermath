@@ -36,6 +36,13 @@ Switch with `/aftermath [lite|full|ultra|off]`.
 ## Install (OpenCode)
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
+  | bash -s --            # global: plugin + commands + skills
+```
+
+Or from a clone (same flags, plus `--source` to skip cloning):
+
+```bash
 git clone https://github.com/moah0911/aftermath
 node aftermath/scripts/install.js            # global: plugin + commands + skills
 node aftermath/scripts/install.js --project  # or: wire the current project only

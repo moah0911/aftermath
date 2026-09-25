@@ -19,7 +19,7 @@
     "aftermath-install": "scripts/install.js"
   },
   "scripts": {
-    "test": "node --test tests/signals.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/install.test.cjs",
+    "test": "node --test tests/signals.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/install.test.cjs tests/install-sh.test.cjs",
     "check": "node scripts/check-rule-copies.js"
   }
 }
