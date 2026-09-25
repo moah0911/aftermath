@@ -8,6 +8,7 @@
     "AFTERMATH.md",
     "AGENTS.md",
     "SKILL.md",
+    "assets/",
     "hooks/",
     "skills/",
     "commands/",
@@ -20,7 +21,7 @@
     "aftermath-install": "scripts/install.js"
   },
   "scripts": {
-    "test": "node --test tests/signals.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/install.test.cjs tests/install-sh.test.cjs tests/skill-root.test.cjs tests/marketplace.test.cjs",
+    "test": "node --test tests/signals.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/install.test.cjs tests/install-sh.test.cjs tests/skill-root.test.cjs tests/marketplace.test.cjs tests/assets.test.cjs",
     "check": "node scripts/check-rule-copies.js && node scripts/check-versions.js"
   }
 }

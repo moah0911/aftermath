@@ -4,7 +4,24 @@
 [![npm](https://img.shields.io/npm/v/@moah0911%2Faftermath)](https://www.npmjs.com/package/@moah0911/aftermath)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+![Aftermath logo](assets/logo.png)
+
 Most agent skills teach how to build. Aftermath teaches how to **stop and recover** when something already broke: a test suite goes green → red, the same error recurs, a destructive command looms, or the user says "you broke it".
+
+<details>
+<summary>ASCII banner (terminal)</summary>
+
+```
+ ██  ████ █████ ████ ███  █   █  ██  █████ █  █
+█  █ █      █   █    █  █ ██ ██ █  █   █   █  █
+████ ███    █   ███  ███  █ █ █ ████   █   ████
+█  █ █      █   █    █ █  █   █ █  █   █   █  █
+█  █ █      █   ████ █  █ █   █ █  █   █   █  █
+
+            stop · revert · recover
+```
+
+</details>
 
 ## The ladder (`AFTERMATH.md`)
 
@@ -85,18 +102,20 @@ Restart OpenCode after adding. Also works from a checkout on Claude Code / Codex
 
 ```
 AFTERMATH.md          # the ladder — always loaded, ~dozen lines
+SKILL.md              # root skill entry (discovery pointer)
+assets/               # logo.png, icon.png, aftermath.txt (via scripts/make-logo.py)
 hooks/                # shared instruction builder, mode config, signal detectors, host hooks
 skills/               # aftermath + test-regression + retry-loop + destructive-action
 commands/             # portable slash commands (mirrored to .opencode/commands/)
 .opencode/plugins/   # server plugin (hybrid: always-on injection + failure tripwires)
 scripts/              # install.js + install.sh + consistency checks
-tests/                # node:test suite (44 tests)
+tests/                # node:test suite (48 tests)
 ```
 
 ## Verify
 
 ```bash
-npm test        # 44 tests
+npm test        # 48 tests
 npm run check   # rule-copy + version alignment
 ```
 
