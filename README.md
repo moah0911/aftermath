@@ -1,7 +1,6 @@
 # Aftermath — post-failure recovery skill for AI coding agents
 
 [![skills.sh](https://skills.sh/b/moah0911/aftermath)](https://skills.sh/moah0911/aftermath)
-[![npm](https://img.shields.io/npm/v/@moah0911%2Faftermath)](https://www.npmjs.com/package/@moah0911/aftermath)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ![Aftermath logo](assets/logo.png)
