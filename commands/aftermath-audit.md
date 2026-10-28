@@ -11,4 +11,4 @@ Audit the working tree for scope creep:
 
 Stated task: $ARGUMENTS
 
-Rule: "while I was here" is not a justification. Fix only the breaking diff.
+If a baseline commit is provided, use `git diff --name-only <baseline>` instead of the working tree. Rule: "while I was here" is not a justification. Fix only the breaking diff.

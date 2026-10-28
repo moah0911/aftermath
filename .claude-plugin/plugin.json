@@ -1,7 +1,7 @@
 {
   "name": "aftermath",
-  "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good.",
-  "version": "0.2.0",
+  "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards and checkpoint auto-revert.",
+  "version": "0.4.0",
   "author": "Aftermath",
   "license": "MIT",
   "skills": "../skills/",

@@ -13,6 +13,8 @@ const expected = [
   'aftermath-revert.md',
   'aftermath-audit.md',
   'aftermath-log.md',
+  'aftermath-checkpoint.md',
+  'aftermath-init.md',
 ];
 
 describe('slash commands', () => {

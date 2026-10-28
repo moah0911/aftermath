@@ -338,13 +338,17 @@ function main(argv) {
   return 0;
 }
 
-if (require.main === module) {
+function cli(argv) {
   try {
-    process.exit(main(process.argv.slice(2)));
+    return main(argv);
   } catch (e) {
     console.error('aftermath install failed: ' + (e && e.message ? e.message : e));
-    process.exit(1);
+    return 1;
   }
+}
+
+if (require.main === module) {
+  process.exit(cli(process.argv.slice(2)));
 }
 
 module.exports = {
@@ -353,5 +357,18 @@ module.exports = {
   removePluginEntry,
   pluginSpec,
   loadOpencodeJson,
+  configBase,
+  repoCacheDir,
+  preflight,
+  validateRepo,
+  ensureRepo,
+  linkCommands,
+  unlinkCommands,
+  wireOpencode,
+  printHostSteps,
+  persistMode,
+  main,
+  cli,
+  usage,
   REPO_URL,
 };

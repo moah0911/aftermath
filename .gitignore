@@ -20,3 +20,6 @@ Thumbs.db
 # Test / coverage artifacts
 coverage/
 .nyc_output/
+
+# Local CLI settings
+.qoder/

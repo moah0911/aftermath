@@ -4,12 +4,11 @@
 'use strict';
 const path = require('path');
 
-const root =
-  process.env.AFTERMATH_DIR || path.join(__dirname, '..');
-const instructions = require(path.join(root, 'hooks', 'aftermath-instructions'));
-const config = require(path.join(root, 'hooks', 'aftermath-config'));
-
 try {
+  const root = process.env.AFTERMATH_DIR || path.join(__dirname, '..');
+  const instructions = require(path.join(root, 'hooks', 'aftermath-instructions'));
+  const config = require(path.join(root, 'hooks', 'aftermath-config'));
+
   const mode = config.readMode();
   if (mode === 'off') process.exit(0);
   const text = instructions.getAftermathInstructions(mode);
