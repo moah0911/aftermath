@@ -6,7 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$AFTERMATH_DIR/hooks/session-start.cjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-$AFTERMATH_DIR}}/hooks/session-start.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-$AFTERMATH_DIR}}/hooks/user-prompt-submit.cjs\"",
             "timeout": 10
           }
         ]
@@ -18,7 +29,29 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$AFTERMATH_DIR/hooks/pre-tool-use.cjs\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-$AFTERMATH_DIR}}/hooks/pre-tool-use.cjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-$AFTERMATH_DIR}}/hooks/pre-tool-use.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-$AFTERMATH_DIR}}/hooks/post-tool-use.cjs\"",
             "timeout": 10
           }
         ]

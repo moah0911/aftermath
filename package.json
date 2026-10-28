@@ -1,7 +1,7 @@
 {
   "name": "@moah0911/aftermath",
-  "version": "0.4.0",
-  "description": "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, opt-in checkpoint auto-revert, and an init command for destructive-safe coverage.",
+  "version": "0.5.0",
+  "description": "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, checkpoints, and host parity for OpenCode, Claude Code, and Codex.",
   "license": "MIT",
   "keywords": ["opencode", "opencode-plugin", "agent-skill", "claude-code", "recovery", "postmortem", "checkpoint", "enforcement", "init", "destructive-safety"],
   "files": [
@@ -22,8 +22,8 @@
     "aftermath-install": "scripts/install.js"
   },
   "scripts": {
-    "test": "node --test tests/signals.test.cjs tests/attempts.test.cjs tests/outcomes.test.cjs tests/checkpoints.test.cjs tests/policy.test.cjs tests/frontmatter.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/init.test.cjs tests/install.test.cjs tests/install-cli.test.cjs tests/install-sh.test.cjs tests/hook-entrypoints.test.cjs tests/skill-root.test.cjs tests/skills.test.cjs tests/marketplace.test.cjs tests/assets.test.cjs",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --test-coverage-exclude=\"**/node_modules/**\" --test-coverage-exclude=\"/usr/**\" --test-coverage-lines=95 --test-coverage-branches=85 --test-coverage-functions=98 tests/signals.test.cjs tests/attempts.test.cjs tests/outcomes.test.cjs tests/checkpoints.test.cjs tests/policy.test.cjs tests/frontmatter.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/init.test.cjs tests/install.test.cjs tests/install-cli.test.cjs tests/install-sh.test.cjs tests/hook-entrypoints.test.cjs tests/skill-root.test.cjs tests/skills.test.cjs tests/marketplace.test.cjs tests/assets.test.cjs",
+    "test": "node --test tests/signals.test.cjs tests/attempts.test.cjs tests/outcomes.test.cjs tests/checkpoints.test.cjs tests/policy.test.cjs tests/frontmatter.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/init.test.cjs tests/install.test.cjs tests/install-cli.test.cjs tests/install-sh.test.cjs tests/hook-entrypoints.test.cjs tests/skill-root.test.cjs tests/skills.test.cjs tests/docs.test.cjs tests/marketplace.test.cjs tests/assets.test.cjs",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --test-coverage-exclude=\"**/node_modules/**\" --test-coverage-exclude=\"/usr/**\" --test-coverage-lines=95 --test-coverage-branches=85 --test-coverage-functions=98 tests/signals.test.cjs tests/attempts.test.cjs tests/outcomes.test.cjs tests/checkpoints.test.cjs tests/policy.test.cjs tests/frontmatter.test.cjs tests/instructions.test.cjs tests/config.test.cjs tests/commands.test.cjs tests/opencode-plugin.test.mjs tests/init.test.cjs tests/install.test.cjs tests/install-cli.test.cjs tests/install-sh.test.cjs tests/hook-entrypoints.test.cjs tests/skill-root.test.cjs tests/skills.test.cjs tests/docs.test.cjs tests/marketplace.test.cjs tests/assets.test.cjs",
     "check": "node scripts/check-rule-copies.js && node scripts/check-versions.js"
   }
 }

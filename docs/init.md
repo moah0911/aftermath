@@ -89,8 +89,11 @@ outside safe paths are blocked. Policy v1 parses `rm -r/-rf` and `find ... -dele
 other destructive commands stay blocked.
 
 The same policy runs in the OpenCode plugin and in the Claude Code / Codex
-`PreToolUse` hook. At `lite`/`off`, the OpenCode plugin is advisory or disabled; the
-Claude/Codex hooks allow the command because those hosts have no advisory channel.
+`PreToolUse` hook (Bash). Those hosts also use `PreToolUse` to freeze Edit/Write/
+MultiEdit after an unresolved failure, and `PostToolUse` / `UserPromptSubmit` to
+deliver failure and correction reminders. At `lite`/`off`, the OpenCode plugin is
+advisory or disabled; the Claude/Codex hooks allow the command because those hosts
+have no advisory channel.
 
 ## Baseline
 

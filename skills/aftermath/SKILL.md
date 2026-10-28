@@ -38,7 +38,7 @@ The OpenCode plugin turns the ladder's stop rules into tool guards at `full` and
 - `edit`/`write` is **blocked while a failure is unresolved**. Clear the guard by getting a test command green, running `/aftermath-revert`, or dropping to `lite`/`off`.
 - Intentional exceptions go in `~/.config/aftermath/config.json` → `destructiveAllowlist` (array of command substrings).
 - `aftermath init` / `/aftermath-init` writes project `safePaths` (disposable artifacts) and `protectedPaths` (source, VCS, secrets, manifests). Filesystem deletes under safe paths are allowed; protected or unknown targets stay blocked.
-- Claude Code / Codex block destructive Bash through `PreToolUse` using the same path policy; they do not freeze forward edits.
+- Claude Code / Codex use `PreToolUse` for the same path policy and forward-edit freeze, and `PostToolUse` / `UserPromptSubmit` to deliver failure and correction reminders. They do not checkpoint files.
 - Never try to bypass a block by rephrasing the command. Confirm state, then proceed deliberately.
 
 ## Checkpoints and ultra auto-revert

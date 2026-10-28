@@ -42,7 +42,7 @@ Irreversible means unrecoverable. Slow down to the speed of verification.
 
 ## Forward-edit freeze
 
-After a test regression or an escalated repeat error, OpenCode blocks `edit`/`write` at `full`/`ultra` until a test passes, `/aftermath-revert` runs, or the level drops. Reverting through Bash is allowed. Do not bypass the freeze by editing through another tool or path.
+After a test regression or an escalated repeat error, OpenCode and Claude Code / Codex block `edit`/`write` at `full`/`ultra` until a test passes, `/aftermath-revert` runs, or the level drops. Reverting through Bash is allowed. Do not bypass the freeze by editing through another tool or path.
 
 ## Scope-creep check (same skill, same caution)
 

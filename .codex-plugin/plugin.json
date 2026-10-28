@@ -1,6 +1,7 @@
 {
   "name": "aftermath",
-  "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards and checkpoint auto-revert.",
-  "version": "0.4.0",
-  "skills": "../skills/"
+  "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, and failure signals.",
+  "version": "0.5.0",
+  "skills": "../skills/",
+  "hooks": "../hooks/claude-codex-hooks.json"
 }

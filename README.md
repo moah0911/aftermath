@@ -68,15 +68,15 @@ Full flags, detection matrix, config schema, and policy reasons: [`docs/init.md`
 
 - **Destructive commands are blocked** at `full`/`ultra` (force push, reset --hard, clean -f, rm -rf, drop, prune, destroy). `lite` only flags them. `destructiveAllowlist` handles intentional exceptions.
 - **Project-aware path policy:** after `aftermath init`, filesystem deletes are allowed only when every target is a literal path under `safePaths` and outside `protectedPaths`. Unknown, dynamic, absolute-outside, or protected targets stay blocked. Claude Code and Codex use the same policy through `PreToolUse`.
-- **Forward edits are frozen while a failure is unresolved.** Get a test green, run `/aftermath-revert`, or drop to `lite`/`off`.
+- **Forward edits are frozen while a failure is unresolved.** OpenCode blocks `edit`/`write`; Claude Code and Codex block Edit/Write/MultiEdit in `PreToolUse`. Get a test green, run `/aftermath-revert`, or drop to `lite`/`off`.
 - **Ultra checkpoints (opt-in):** snapshot files before edits, mark last-known-good on a green test, restore only matching files on a green→red test. Manual edits become reported conflicts, never overwritten.
-- **Detection:** test failures, repeat-error attempt ledger, flaky alternation, build failure, dependency resolution, merge conflicts, and phrase-level correction signals.
+- **Detection:** test failures, repeat-error attempt ledger, flaky alternation, build failure, dependency resolution, merge conflicts, and phrase-level correction signals. Claude Code and Codex receive the same pointers through `PostToolUse` and `UserPromptSubmit`.
 
-| Host | Destructive block | Forward-edit freeze | Checkpoints |
-|------|-------------------|--------------------|-------------|
-| OpenCode | full/ultra, path-aware | full/ultra | ultra + `autoRevert` |
-| Claude Code | PreToolUse, path-aware | — | — |
-| Codex | PreToolUse, path-aware | — | — |
+| Host | Destructive block | Forward-edit freeze | Failure signals | Checkpoints |
+|------|-------------------|--------------------|-----------------|-------------|
+| OpenCode | full/ultra, path-aware | full/ultra | in-process | ultra + `autoRevert` |
+| Claude Code | PreToolUse, path-aware | full/ultra | PostToolUse + UserPromptSubmit | — |
+| Codex | PreToolUse, path-aware | full/ultra | PostToolUse + UserPromptSubmit | — |
 
 ## Intensities
 
@@ -119,53 +119,82 @@ Project: `.aftermath/config.json` (written by `aftermath init`; found by walking
 
 ## Install
 
-Any agent (skills.sh):
+| Harness | Install | What you get |
+|---------|---------|--------------|
+| Any skills-compatible agent | `npx skills add moah0911/aftermath -g -y` | The eight on-demand skills |
+| OpenCode | npm plugin or curl installer | Ladder injection, guards, checkpoints, commands, skills |
+| Claude Code | plugin marketplace | SessionStart/UserPromptSubmit/PreToolUse/PostToolUse hooks, commands, skills |
+| Codex | `codex plugin add aftermath@aftermath` | Shared hooks and skills |
+| Checkout / manual | `node scripts/install.js` | Host wiring from a clone |
 
-```bash
-npx skills add moah0911/aftermath -g -y
-```
+### OpenCode
 
-OpenCode via npm:
+Add the npm package to `opencode.json`:
 
 ```json
 { "plugin": ["@moah0911/aftermath"] }
 ```
 
-OpenCode via curl:
+Or install globally with the curl bootstrapper (plugin + commands + skills):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
-  | bash -s --            # global: plugin + commands + skills
+  | bash -s --
 ```
 
-Claude Code via marketplace:
+### Claude Code
 
-```
+```text
 /plugin marketplace add moah0911/aftermath
 /plugin install aftermath@aftermath
 ```
 
-Or from a clone (same flags, plus `--source` to skip cloning):
+### Codex
+
+```bash
+codex plugin add aftermath@aftermath
+```
+
+### Any skills-compatible agent
+
+```bash
+npx skills add moah0911/aftermath -g -y
+```
+
+This installs the skills only. Hosts with lifecycle hooks get the fuller enforcement;
+see [`docs/agent-portability.md`](docs/agent-portability.md).
+
+### Checkout / manual
 
 ```bash
 git clone https://github.com/moah0911/aftermath
-node aftermath/scripts/install.js            # global: plugin + commands + skills
-node aftermath/scripts/install.js --project  # or: wire the current project only
+node aftermath/scripts/install.js --project --host all
 ```
 
-Or wire manually:
+`--host opencode|claude|codex|all` filters the host steps, `--source` uses an existing
+checkout, `--mode lite|full|ultra|off` persists a default level, `--dry-run` prints the
+actions, and `--uninstall` removes the wiring. OpenCode is wired in place; Claude Code
+and Codex print their marketplace/plugin install steps.
+
+Manual OpenCode wiring:
 
 ```json
 { "plugin": ["./.opencode/plugins/aftermath.mjs"] }
 ```
 
-Then initialize the project:
+### Initialize the project
+
+After installing, run the project initializer once. It detects stacks/test commands and
+writes `.aftermath/config.json` with destructive-safe paths:
 
 ```bash
 npx @moah0911/aftermath init
+# or from a checkout:
+node aftermath/scripts/init.js
 ```
 
-Restart OpenCode after adding. Also works from a checkout on Claude Code / Codex via the lifecycle hooks in `hooks/` — see `docs/agent-portability.md`.
+See [`docs/init.md`](docs/init.md) for flags, detection, and policy details. Restart the
+host after installing if it does not reload plugins automatically.
 
 ## Layout
 
