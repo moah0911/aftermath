@@ -9,6 +9,19 @@ Aftermath is agent-portable. The skills in `skills/` hold the core behavior; hos
 | Claude Code | `.claude-plugin/plugin.json`, `commands/`, `hooks/claude-codex-hooks.json`, `hooks/session-start.cjs`, `hooks/pre-tool-use.cjs`, `hooks/post-tool-use.cjs`, `hooks/user-prompt-submit.cjs`, `skills/` | full/ultra, path-aware (exit 2) | full/ultra (Edit/Write/MultiEdit) | PostToolUse + UserPromptSubmit | — |
 | Codex | `.codex-plugin/plugin.json`, `hooks/claude-codex-hooks.json`, `hooks/`, `skills/` | full/ultra, path-aware (exit 2) | full/ultra (Edit/Write/MultiEdit) | PostToolUse + UserPromptSubmit | — |
 
+## Install commands
+
+| Host | Command |
+|------|---------|
+| OpenCode | `curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \| bash -s --` |
+| Codex | `codex plugin marketplace add moah0911/aftermath --ref main && codex plugin add aftermath@aftermath` |
+| Claude Code | `/plugin marketplace add moah0911/aftermath` then `/plugin install aftermath@aftermath` |
+| Skills-only | `npx skills add moah0911/aftermath -g -y` |
+
+Codex requires the marketplace to be registered before `plugin add`; the combined
+line above does both. `scripts/install.sh --host codex` runs both automatically when
+the `codex` CLI is on `PATH`.
+
 ## Project initialization
 
 Run `aftermath init` (or `/aftermath-init`) in a project to write `.aftermath/config.json`.

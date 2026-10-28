@@ -27,12 +27,14 @@ describe('installation documentation', () => {
       '@moah0911/aftermath',
       'plugin marketplace add moah0911/aftermath',
       'plugin install aftermath@aftermath',
+      'codex plugin marketplace add moah0911/aftermath --ref main',
       'codex plugin add aftermath@aftermath',
       'node aftermath/scripts/install.js',
       'npx @moah0911/aftermath init',
     ]) {
       assert.ok(readme.includes(command), `README missing: ${command}`);
     }
+    assert.match(readme, /--host codex/);
     assert.match(readme, /docs\/init\.md/);
     assert.match(readme, /docs\/agent-portability\.md/);
   });

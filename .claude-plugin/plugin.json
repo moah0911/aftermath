@@ -1,7 +1,7 @@
 {
   "name": "aftermath",
   "description": "Post-failure recovery: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, and failure signals.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": "Aftermath",
   "license": "MIT",
   "skills": "../skills/",

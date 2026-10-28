@@ -315,7 +315,8 @@ describe('opencode wiring', () => {
     );
     assert.equal(result.result, 0);
     assert.match(result.logs.join('\n'), /marketplace add/);
-    assert.match(result.logs.join('\n'), /codex plugin add/);
+    assert.match(result.logs.join('\n'), /codex plugin marketplace add/);
+    assert.match(result.logs.join('\n'), /codex plugin add aftermath@aftermath/);
 
     const claudeOnly = capture(() =>
       install.main(['--source', fixture, '--host', 'claude', '--dry-run'])
@@ -324,13 +325,63 @@ describe('opencode wiring', () => {
     assert.match(claudeOnly.logs.join('\n'), /opencode wiring skipped/);
 
     logs.length = 0;
-    install.printHostSteps({ host: 'claude' }, (m) => logs.push(m));
+    install.printHostSteps({ host: 'claude' }, fixture, (m) => logs.push(m));
     assert.match(logs.join('\n'), /marketplace/);
-    assert.doesNotMatch(logs.join('\n'), /codex plugin add/);
+    assert.doesNotMatch(logs.join('\n'), /codex plugin/);
 
     logs.length = 0;
-    install.printHostSteps({ host: 'codex', uninstall: true }, (m) => logs.push(m));
+    install.printHostSteps({ host: 'codex', uninstall: true }, fixture, (m) =>
+      logs.push(m)
+    );
     assert.equal(logs.length, 0);
+  });
+
+  it('runs Codex marketplace add and plugin add when codex is on PATH', (t) => {
+    if (process.platform === 'win32') return t.skip('POSIX shell shim');
+    const bin = path.join(tmp, 'bin');
+    const callLog = path.join(tmp, 'codex-calls.log');
+    fs.mkdirSync(bin);
+    const shim = path.join(bin, 'codex');
+    fs.writeFileSync(
+      shim,
+      '#!/bin/sh\nprintf "%s\\n" "$*" >> "' + callLog + '"\nexit 0\n'
+    );
+    fs.chmodSync(shim, 0o755);
+    const prevPath = process.env.PATH;
+    process.env.PATH = bin + path.delimiter + prevPath;
+    try {
+      const logs = [];
+      install.printHostSteps(
+        { host: 'codex', source: false, ref: 'main', dryRun: false },
+        fixture,
+        (m) => logs.push(m)
+      );
+      const calls = fs.readFileSync(callLog, 'utf8').trim().split('\n');
+      assert.ok(
+        calls.includes(
+          'plugin marketplace add https://github.com/moah0911/aftermath --ref main'
+        )
+      );
+      assert.ok(calls.includes('plugin add aftermath@aftermath'));
+      assert.match(logs.join('\n'), /marketplace added/);
+      assert.match(logs.join('\n'), /plugin installed/);
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
+  it('prints a local Codex marketplace command without --ref', () => {
+    const logs = [];
+    install.printHostSteps(
+      { host: 'codex', source: true, ref: 'main', dryRun: true },
+      fixture,
+      (m) => logs.push(m)
+    );
+    assert.match(
+      logs.join('\n'),
+      new RegExp('codex plugin marketplace add ' + fixture.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    );
+    assert.doesNotMatch(logs.join('\n'), /--ref/);
   });
 
   it('runs the full project CLI path and uninstalls it', () => {

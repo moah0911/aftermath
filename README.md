@@ -124,7 +124,7 @@ Project: `.aftermath/config.json` (written by `aftermath init`; found by walking
 | Any skills-compatible agent | `npx skills add moah0911/aftermath -g -y` | The eight on-demand skills |
 | OpenCode | npm plugin or curl installer | Ladder injection, guards, checkpoints, commands, skills |
 | Claude Code | plugin marketplace | SessionStart/UserPromptSubmit/PreToolUse/PostToolUse hooks, commands, skills |
-| Codex | `codex plugin add aftermath@aftermath` | Shared hooks and skills |
+| Codex | `codex plugin marketplace add moah0911/aftermath --ref main && codex plugin add aftermath@aftermath` | Shared hooks and skills |
 | Checkout / manual | `node scripts/install.js` | Host wiring from a clone |
 
 ### OpenCode
@@ -152,7 +152,15 @@ curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/ins
 ### Codex
 
 ```bash
-codex plugin add aftermath@aftermath
+codex plugin marketplace add moah0911/aftermath --ref main && codex plugin add aftermath@aftermath
+```
+
+The marketplace must be registered before the plugin is installed. The Aftermath
+installer runs both commands automatically when `codex` is on `PATH`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
+  | bash -s -- --host codex
 ```
 
 ### Any skills-compatible agent
@@ -173,8 +181,9 @@ node aftermath/scripts/install.js --project --host all
 
 `--host opencode|claude|codex|all` filters the host steps, `--source` uses an existing
 checkout, `--mode lite|full|ultra|off` persists a default level, `--dry-run` prints the
-actions, and `--uninstall` removes the wiring. OpenCode is wired in place; Claude Code
-and Codex print their marketplace/plugin install steps.
+actions, and `--uninstall` removes the wiring. OpenCode is wired in place; Codex is
+installed through its CLI when available; Claude Code prints its two interactive
+marketplace prompts.
 
 Manual OpenCode wiring:
 

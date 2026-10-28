@@ -297,7 +297,7 @@ function wireOpencode(opts, repoDir, log) {
   log('skills auto-register via the plugin config hook — no action needed');
 }
 
-function printHostSteps(opts, log) {
+function printHostSteps(opts, repoDir, log) {
   if (opts.uninstall) return;
   if (wants('claude', opts)) {
     log('Claude Code (interactive — run these two prompts):');
@@ -305,8 +305,41 @@ function printHostSteps(opts, log) {
     log('  /plugin install aftermath@aftermath');
   }
   if (wants('codex', opts)) {
-    log('Codex:');
-    log('  codex plugin add aftermath@aftermath');
+    const source = opts.source ? repoDir : REPO_URL;
+    const marketplaceArgs = ['plugin', 'marketplace', 'add', source];
+    if (!opts.source) marketplaceArgs.push('--ref', opts.ref);
+    const pluginArgs = ['plugin', 'add', 'aftermath@aftermath'];
+    const marketplaceCmd = 'codex ' + marketplaceArgs.join(' ');
+    const pluginCmd = 'codex ' + pluginArgs.join(' ');
+    const manual = marketplaceCmd + ' && ' + pluginCmd;
+
+    if (!opts.dryRun && commandExists('codex')) {
+      try {
+        run('codex', marketplaceArgs);
+        log('Codex: marketplace added.');
+      } catch (e) {
+        log('Codex marketplace add: ' + (e && e.message ? e.message : e));
+      }
+      try {
+        run('codex', pluginArgs);
+        log('Codex: plugin installed.');
+      } catch (e) {
+        log('Codex plugin add failed: ' + (e && e.message ? e.message : e));
+        log('  run manually: ' + manual);
+      }
+    } else {
+      log('Codex (single command):');
+      log('  ' + manual);
+    }
+  }
+}
+
+function commandExists(name) {
+  try {
+    run(name, ['--version']);
+    return true;
+  } catch (_) {
+    return false;
   }
 }
 
@@ -331,7 +364,7 @@ function main(argv) {
   if (wants('opencode', opts)) wireOpencode(opts, repoDir, log);
   else log('opencode wiring skipped (--host ' + opts.host + ')');
   persistMode(opts, log);
-  printHostSteps(opts, log);
+  printHostSteps(opts, repoDir, log);
   if (wants('opencode', opts) && !opts.uninstall) {
     log('done — quit and restart opencode (config loads at startup)');
   }
