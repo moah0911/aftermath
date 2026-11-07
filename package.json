@@ -1,5 +1,5 @@
 {
-  "name": "@after-math/aftermath",
+  "name": "@after.math/aftermath",
   "version": "0.5.1",
   "description": "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, checkpoints, and host parity for OpenCode, Claude Code, and Codex.",
   "license": "MIT",

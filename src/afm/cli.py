@@ -168,7 +168,7 @@ def run() -> None:
                     "",
                     "Run `afm init --help` for details.",
                     "Node users: the full `aftermath install` flow ships via npm",
-                    "(`npx @after-math/aftermath init`).",
+                    "(`npx @after.math/aftermath init`).",
                 ]
             )
         )

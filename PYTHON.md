@@ -1,6 +1,6 @@
 # afm — aftermath recovery for Python toolchains
 
-The npm/JS distribution of aftermath is [@after-math/aftermath](https://www.npmjs.com/package/@after-math/aftermath)
+The npm/JS distribution of aftermath is [@after.math/aftermath](https://www.npmjs.com/package/@after.math/aftermath)
 (source: [moah0911/aftermath](https://github.com/moah0911/aftermath)). This wheel,
 **afm-recovery**, brings the same `init` flow to Python environments with no
 Node.js requirement.

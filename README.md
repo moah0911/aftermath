@@ -37,9 +37,9 @@ Honesty under pressure: never hide a break, never silently revert, never invent 
 ## Initialize a project
 
 ```bash
-npx @after-math/aftermath init          # detect stack + write .aftermath/config.json
-npx @after-math/aftermath init --dry-run --json
-npx @after-math/aftermath init --run-tests   # also record a baseline (opt-in)
+npx @after.math/aftermath init          # detect stack + write .aftermath/config.json
+npx @after.math/aftermath init --dry-run --json
+npx @after.math/aftermath init --run-tests   # also record a baseline (opt-in)
 ```
 
 Python toolchains, no node required:
@@ -138,7 +138,7 @@ Project: `.aftermath/config.json` (written by `aftermath init`; found by walking
 Add the npm package to `opencode.json`:
 
 ```json
-{ "plugin": ["@after-math/aftermath"] }
+{ "plugin": ["@after.math/aftermath"] }
 ```
 
 Or install globally with the curl bootstrapper (plugin + commands + skills):
@@ -203,7 +203,7 @@ After installing, run the project initializer once. It detects stacks/test comma
 writes `.aftermath/config.json` with destructive-safe paths:
 
 ```bash
-npx @after-math/aftermath init
+npx @after.math/aftermath init
 # or from a checkout:
 node aftermath/scripts/init.js
 ```

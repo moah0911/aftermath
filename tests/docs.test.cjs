@@ -24,13 +24,13 @@ describe('installation documentation', () => {
     }
     for (const command of [
       'npx skills add moah0911/aftermath',
-      '@after-math/aftermath',
+      '@after.math/aftermath',
       'plugin marketplace add moah0911/aftermath',
       'plugin install aftermath@aftermath',
       'codex plugin marketplace add moah0911/aftermath --ref main',
       'codex plugin add aftermath@aftermath',
       'node aftermath/scripts/install.js',
-      'npx @after-math/aftermath init',
+      'npx @after.math/aftermath init',
     ]) {
       assert.ok(readme.includes(command), `README missing: ${command}`);
     }
