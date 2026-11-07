@@ -1,4 +1,4 @@
-# Publishes @moah0911/aftermath to the public npm registry when a release is published.
+# Publishes @after-math/aftermath to the public npm registry when a release is published.
 # Requires the repo secret npm_token (a publish-capable npm access token).
 # For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 

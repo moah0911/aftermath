@@ -8,10 +8,10 @@ artifacts, records which paths must never be deleted, and writes
 ## Quick start
 
 ```bash
-npx @moah0911/aftermath init                 # detect + write config + wire OpenCode
-npx @moah0911/aftermath init --dry-run --json
-npx @moah0911/aftermath init --no-wire       # config only
-npx @moah0911/aftermath init --run-tests     # also record a baseline (opt-in)
+npx @after-math/aftermath init                 # detect + write config + wire OpenCode
+npx @after-math/aftermath init --dry-run --json
+npx @after-math/aftermath init --no-wire       # config only
+npx @after-math/aftermath init --run-tests     # also record a baseline (opt-in)
 ```
 
 From a checkout, use `node scripts/init.js` with the same flags. The slash command

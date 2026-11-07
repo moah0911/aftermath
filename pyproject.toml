@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "afm-recovery"
+version = "0.5.1"
+description = "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, checkpoints, and host parity for OpenCode, Claude Code, and Codex."
+readme = "PYTHON.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "moah0911" }]
+keywords = ["opencode", "claude-code", "recovery", "postmortem", "checkpoint", "agent-skill"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Version Control",
+]
+# Standalone distribution — no runtime dependencies, stdlib only, like the JS CLI.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/moah0911/aftermath"
+Repository = "https://github.com/moah0911/aftermath"
+
+# The distribution name must be unique on PyPI (plain `afm` and `aftermath` are
+# taken), but command names are not — so the wheel installs both the short
+# `afm` command and an unambiguous `afm-recovery` alias.
+[project.scripts]
+afm = "afm.cli:run"
+afm-recovery = "afm.cli:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/afm"]

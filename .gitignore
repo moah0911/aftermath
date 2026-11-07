@@ -5,6 +5,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local npm credentials (project-confined token — never commit)
+.npmrc
+
+# Python packaging for afm-recovery (PyPI distribution)
+__pycache__/
+.venv/
+dist/
+*.egg-info/
+
 # OpenCode / Aftermath runtime state (per-machine, never commit)
 .config/
 *.log.1

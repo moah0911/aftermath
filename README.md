@@ -37,9 +37,15 @@ Honesty under pressure: never hide a break, never silently revert, never invent 
 ## Initialize a project
 
 ```bash
-npx @moah0911/aftermath init          # detect stack + write .aftermath/config.json
-npx @moah0911/aftermath init --dry-run --json
-npx @moah0911/aftermath init --run-tests   # also record a baseline (opt-in)
+npx @after-math/aftermath init          # detect stack + write .aftermath/config.json
+npx @after-math/aftermath init --dry-run --json
+npx @after-math/aftermath init --run-tests   # also record a baseline (opt-in)
+```
+
+Python toolchains, no node required:
+
+```bash
+uvx afm-recovery init        # same init flow via PyPI wheel (pipx install afm-recovery)
 ```
 
 Init detects test/build commands, disposable artifacts, and protected paths, then writes
@@ -132,7 +138,7 @@ Project: `.aftermath/config.json` (written by `aftermath init`; found by walking
 Add the npm package to `opencode.json`:
 
 ```json
-{ "plugin": ["@moah0911/aftermath"] }
+{ "plugin": ["@after-math/aftermath"] }
 ```
 
 Or install globally with the curl bootstrapper (plugin + commands + skills):
@@ -197,7 +203,7 @@ After installing, run the project initializer once. It detects stacks/test comma
 writes `.aftermath/config.json` with destructive-safe paths:
 
 ```bash
-npx @moah0911/aftermath init
+npx @after-math/aftermath init
 # or from a checkout:
 node aftermath/scripts/init.js
 ```

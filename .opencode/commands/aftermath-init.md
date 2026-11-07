@@ -6,7 +6,7 @@ Initialize Aftermath in the current project so destructive commands are classifi
 
 Action: $ARGUMENTS (optional; pass flags such as `--dry-run`, `--no-wire`, `--run-tests`)
 
-1. Run `npx @moah0911/aftermath init $ARGUMENTS` (or `node <aftermath-root>/scripts/init.js $ARGUMENTS` from a checkout).
+1. Run `npx @after-math/aftermath init $ARGUMENTS` (or `node <aftermath-root>/scripts/init.js $ARGUMENTS` from a checkout).
 2. Report the detected stacks, test/build commands, safe paths, and protected paths.
 3. Tell the user to run the detected test command once to establish last-known-good, then use `/aftermath-status`.
 
