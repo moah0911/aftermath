@@ -422,6 +422,20 @@ describe('opencode wiring', () => {
     assert.doesNotMatch(logs.join('\n'), /--ref/);
   });
 
+  it('defaults ref to main when callers omit it (init.js path)', () => {
+    const logs = [];
+    install.printHostSteps(
+      { host: 'codex', dryRun: true },
+      fixture,
+      (m) => logs.push(m)
+    );
+    assert.match(
+      logs.join('\n'),
+      /codex plugin marketplace add https:\/\/github.com\/moah0911\/aftermath --ref main/
+    );
+    assert.doesNotMatch(logs.join('\n'), /--ref undefined/);
+  });
+
   it('runs the full project CLI path and uninstalls it', () => {
     const project = path.join(tmp, 'project-main');
     fs.mkdirSync(project);

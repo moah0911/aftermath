@@ -426,8 +426,9 @@ function printHostSteps(opts, repoDir, log) {
   }
   if (wants('codex', opts)) {
     const source = opts.source ? repoDir : REPO_URL;
+    const ref = opts.ref || 'main';
     const marketplaceArgs = ['plugin', 'marketplace', 'add', source];
-    if (!opts.source) marketplaceArgs.push('--ref', opts.ref);
+    if (!opts.source) marketplaceArgs.push('--ref', ref);
     const pluginArgs = ['plugin', 'add', 'aftermath@aftermath'];
     const marketplaceCmd = 'codex ' + marketplaceArgs.join(' ');
     const pluginCmd = 'codex ' + pluginArgs.join(' ');
