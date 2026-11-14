@@ -1,3 +1,4 @@
 # AFTERMATH.log — one-line postmortems (what broke, what fixed it)
 # Format: YYYY-MM-DD | broke: [X] | fixed: [Y]
 2026-11-07 | broke: npx install cmds 404 — @moah0911/aftermath never published | fixed: scoped pkg renamed @after.math/aftermath (18 refs), CI workflows fixed, publishing via user token
+2026-11-14 | broke: published init crashed 'log is not a function' (printHostSteps arity) + project wiring pointed into ephemeral npx cache | fixed: relative spec + copy-staged assets (0.5.2); codex --ref undefined (0.5.3); e2e verified on scratch projects
