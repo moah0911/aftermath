@@ -302,8 +302,13 @@ describe('init CLI', () => {
       fs.readFileSync(path.join(dir, 'opencode.json'), 'utf8')
     );
     assert.ok(opencode.plugin[0].endsWith('aftermath.mjs'));
+    assert.equal(opencode.plugin[0], './.opencode/plugins/aftermath.mjs');
+    // Project wiring stages real copies — never symlinks to a cache/clone.
     assert.ok(
-      fs.lstatSync(path.join(dir, '.opencode', 'commands', 'aftermath.md')).isSymbolicLink()
+      !fs.lstatSync(path.join(dir, '.opencode', 'commands', 'aftermath.md')).isSymbolicLink()
+    );
+    assert.ok(
+      fs.existsSync(path.join(dir, '.opencode', 'plugins', 'aftermath.mjs'))
     );
     assert.match(logs.join('\n'), /wrote .*config/);
   });

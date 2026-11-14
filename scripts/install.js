@@ -249,13 +249,119 @@ function unlinkCommands(repoDir, targetCmdDir, opts, log) {
   return { removed };
 }
 
+// Project-scope assets are copied into the target (never symlinked): a
+// symlink to the npm cache or a cache clone breaks as soon as that tree is
+// pruned, and the plugin must keep resolving its own ../../skills + ../commands.
+// The project is then fully self-contained and the opencode.json spec is the
+// portable relative path.
+const PROJECT_ASSET_DIRS = [
+  ['.opencode', 'plugins'],
+  ['.opencode', 'commands'],
+  ['hooks'],
+  ['skills'],
+];
+
+function walkFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      for (const rel of walkFiles(abs)) out.push(path.join(entry.name, rel));
+    } else {
+      out.push(entry.name);
+    }
+  }
+  return out;
+}
+
+function copyFileIfNeeded(src, dest, opts, log) {
+  try {
+    if (fs.existsSync(dest)) {
+      if (fs.readFileSync(dest).equals(fs.readFileSync(src))) {
+        log(`already in place: ${dest}`);
+        return 'in-place';
+      }
+      log(`skip (real file differs, left alone): ${dest}`);
+      return 'skip';
+    }
+  } catch (_) {
+    // fall through to copy attempt
+  }
+  log(`copy: ${dest} ← ${src}`);
+  if (!opts.dryRun) {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+  }
+  return 'copied';
+}
+
+function stageProjectAssets(repoDir, root, opts, log) {
+  const totals = { copied: 0, skipped: 0 };
+  const perArea = {};
+  for (const rel of PROJECT_ASSET_DIRS) {
+    const srcDir = path.join(repoDir, ...rel);
+    const key = rel[rel.length - 1];
+    perArea[key] = { copied: 0, skipped: 0 };
+    for (const file of walkFiles(srcDir)) {
+      const src = path.join(srcDir, file);
+      const dest = path.join(root, ...rel, file);
+      const outcome = copyFileIfNeeded(src, dest, opts, log);
+      perArea[key][outcome === 'copied' ? 'copied' : 'skipped']++;
+      totals[outcome === 'copied' ? 'copied' : 'skipped']++;
+    }
+  }
+  return { totals, perArea };
+}
+
+function unstageProjectAssets(repoDir, root, opts, log) {
+  let removed = 0;
+  for (const rel of PROJECT_ASSET_DIRS) {
+    const srcDir = path.join(repoDir, ...rel);
+    for (const file of walkFiles(srcDir)) {
+      const src = path.join(srcDir, file);
+      const dest = path.join(root, ...rel, file);
+      let same = false;
+      try {
+        same = fs.existsSync(dest) && fs.readFileSync(dest).equals(fs.readFileSync(src));
+      } catch (_) {
+        same = false;
+      }
+      if (same) {
+        log(`rm: ${dest}`);
+        if (!opts.dryRun) fs.unlinkSync(dest);
+        removed++;
+      }
+    }
+  }
+  // Tidy empty directories left behind (best-effort, ignore errors).
+  if (!opts.dryRun && removed > 0) {
+    for (const rel of PROJECT_ASSET_DIRS) {
+      let dir = path.join(root, ...rel);
+      while (dir !== root && dir.startsWith(root)) {
+        try {
+          fs.rmdirSync(dir);
+        } catch (_) {
+          break; // not empty or IO error — stop walking up
+        }
+        dir = path.dirname(dir);
+      }
+    }
+  }
+  return { removed };
+}
+
+const PROJECT_PLUGIN_SPEC = './.opencode/plugins/' + PLUGIN_BASENAME;
+
 function wireOpencode(opts, repoDir, log) {
   const scope = opts.project ? process.cwd() : path.join(configBase(), 'opencode');
   const cmdDir = opts.project
     ? path.join(scope, '.opencode', 'commands')
     : path.join(scope, 'commands');
   const file = path.join(scope, 'opencode.json');
-  const spec = opts.project ? pluginSpec(repoDir, process.cwd()) : pluginSpec(repoDir, null);
+  // Project scope stages copies into the project, so the spec is always the
+  // portable relative path. Global scope points at the persistent wired copy.
+  const spec = opts.project ? PROJECT_PLUGIN_SPEC : pluginSpec(repoDir, null);
 
   if (opts.uninstall) {
     if (!fs.existsSync(file)) {
@@ -274,8 +380,13 @@ function wireOpencode(opts, repoDir, log) {
     } else {
       log('plugin entry already absent');
     }
-    const { removed } = unlinkCommands(repoDir, cmdDir, opts, log);
-    log(`removed ${removed} command link(s)`);
+    if (opts.project) {
+      const { removed } = unstageProjectAssets(repoDir, scope, opts, log);
+      log(`removed ${removed} staged file(s)`);
+    } else {
+      const { removed } = unlinkCommands(repoDir, cmdDir, opts, log);
+      log(`removed ${removed} command link(s)`);
+    }
     return;
   }
 
@@ -292,9 +403,18 @@ function wireOpencode(opts, repoDir, log) {
   } else {
     log('plugin entry already present');
   }
-  const { linked, skipped } = linkCommands(repoDir, cmdDir, opts, log);
-  log(`commands: ${linked} linked, ${skipped} already in place`);
-  log('skills auto-register via the plugin config hook — no action needed');
+  if (opts.project) {
+    const { totals, perArea } = stageProjectAssets(repoDir, scope, opts, log);
+    const summary = Object.entries(perArea)
+      .map(([key, counts]) => `${key}: ${counts.copied} copied, ${counts.skipped} in place`)
+      .join(' · ');
+    log(`assets staged: ${summary} (${totals.copied} copied, ${totals.skipped} already in place)`);
+    log('skills auto-register via the plugin config hook — no action needed');
+  } else {
+    const { linked, skipped } = linkCommands(repoDir, cmdDir, opts, log);
+    log(`commands: ${linked} linked, ${skipped} already in place`);
+    log('skills auto-register via the plugin config hook — no action needed');
+  }
 }
 
 function printHostSteps(opts, repoDir, log) {
@@ -397,6 +517,11 @@ module.exports = {
   ensureRepo,
   linkCommands,
   unlinkCommands,
+  stageProjectAssets,
+  unstageProjectAssets,
+  walkFiles,
+  copyFileIfNeeded,
+  PROJECT_PLUGIN_SPEC,
   wireOpencode,
   printHostSteps,
   persistMode,

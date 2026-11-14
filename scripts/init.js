@@ -423,7 +423,7 @@ function wireProject(root, host, log) {
         log
       );
     }
-    install.printHostSteps({ host }, log);
+    install.printHostSteps({ host }, REPO_ROOT, log);
   } finally {
     process.chdir(prevCwd);
   }

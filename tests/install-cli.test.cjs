@@ -226,7 +226,7 @@ describe('opencode wiring', () => {
     assert.match(logs.join('\n'), /0 linked, 2 already in place/);
   });
 
-  it('wires a project with its own command directory', () => {
+  it('wires a project by staging copies with a relative plugin spec', () => {
     const project = path.join(tmp, 'project');
     fs.mkdirSync(project);
     process.chdir(project);
@@ -239,11 +239,49 @@ describe('opencode wiring', () => {
     const cfg = JSON.parse(
       fs.readFileSync(path.join(project, 'opencode.json'), 'utf8')
     );
-    assert.deepEqual(cfg.plugin, [
-      path.join(fixture, '.opencode', 'plugins', 'aftermath.mjs'),
-    ]);
-    assert.ok(
-      fs.lstatSync(path.join(project, '.opencode', 'commands', 'one.md')).isSymbolicLink()
+    // Portable relative spec — never an absolute path into a cache/clone.
+    assert.deepEqual(cfg.plugin, ['./.opencode/plugins/aftermath.mjs']);
+    // Commands are real copies, not symlinks.
+    const cmdPath = path.join(project, '.opencode', 'commands', 'one.md');
+    assert.ok(!fs.lstatSync(cmdPath).isSymbolicLink());
+    assert.equal(fs.readFileSync(cmdPath, 'utf8'), 'ONE\n');
+    assert.equal(
+      fs.readFileSync(path.join(project, '.opencode', 'plugins', 'aftermath.mjs'), 'utf8'),
+      '// plugin\n'
+    );
+
+    // Rerun is idempotent and leaves byte-identical files alone.
+    const rerunLogs = [];
+    install.wireOpencode(
+      { project: true, dryRun: false, uninstall: false },
+      fixture,
+      (m) => rerunLogs.push(m)
+    );
+    assert.match(rerunLogs.join('\n'), /plugin entry already present/);
+    assert.match(rerunLogs.join('\n'), /already in place/);
+    assert.equal(fs.readFileSync(cmdPath, 'utf8'), 'ONE\n');
+  });
+
+  it('stages hooks/skills when the checkout provides them', () => {
+    const project = path.join(tmp, 'project-hooks');
+    fs.mkdirSync(project);
+    fs.mkdirSync(path.join(fixture, 'hooks'), { recursive: true });
+    fs.mkdirSync(path.join(fixture, 'skills', 'aftermath'), { recursive: true });
+    fs.writeFileSync(path.join(fixture, 'hooks', 'aftermath-config.js'), 'config\n');
+    fs.writeFileSync(path.join(fixture, 'skills', 'aftermath', 'SKILL.md'), '# skill\n');
+    process.chdir(project);
+    install.wireOpencode(
+      { project: true, dryRun: false, uninstall: false },
+      fixture,
+      () => {}
+    );
+    assert.equal(
+      fs.readFileSync(path.join(project, 'hooks', 'aftermath-config.js'), 'utf8'),
+      'config\n'
+    );
+    assert.equal(
+      fs.readFileSync(path.join(project, 'skills', 'aftermath', 'SKILL.md'), 'utf8'),
+      '# skill\n'
     );
   });
 
@@ -276,7 +314,7 @@ describe('opencode wiring', () => {
       (m) => logs.push(m)
     );
     assert.match(logs.join('\n'), /plugin entry already absent/);
-    assert.match(logs.join('\n'), /removed 0 command link/);
+    assert.match(logs.join('\n'), /removed 0 staged file/);
   });
 
   it('uninstall with no config is a no-op', () => {
