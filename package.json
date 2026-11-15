@@ -1,8 +1,20 @@
 {
   "name": "@after.math/aftermath",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, checkpoints, and host parity for OpenCode, Claude Code, and Codex.",
   "license": "MIT",
+  "author": {
+    "name": "after.math",
+    "email": "aftermathplugin@gmail.com"
+  },
+  "homepage": "https://github.com/moah0911/aftermath#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moah0911/aftermath.git"
+  },
+  "bugs": {
+    "url": "https://github.com/moah0911/aftermath/issues"
+  },
   "keywords": ["opencode", "opencode-plugin", "agent-skill", "claude-code", "recovery", "postmortem", "checkpoint", "enforcement", "init", "destructive-safety"],
   "files": [
     "AFTERMATH.md",
@@ -32,5 +44,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

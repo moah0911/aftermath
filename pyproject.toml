@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "afm-recovery"
-version = "0.6.0"
+version = "0.6.1"
 description = "Post-failure recovery skill for AI coding agents: stop, revert cheap damage, return to last-known-good. Project-aware destructive guards, forward-edit freeze, checkpoints, and host parity for OpenCode, Claude Code, and Codex."
 readme = "PYTHON.md"
 license = { text = "MIT" }
