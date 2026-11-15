@@ -140,8 +140,16 @@ function wireOpencodeProject(repoDir, root) {
   };
 }
 
-function runCmd(cmd, args) {
-  return spawnSync(cmd, args, { stdio: 'pipe', encoding: 'utf8', timeout: 120000 });
+function runCmd(cmd, args, cwd) {
+  // npm runs lifecycle scripts with cwd = the package directory, so every
+  // agent CLI call must run from the project root — Claude Code resolves
+  // project scope (and writes .claude/settings.json) from the cwd.
+  return spawnSync(cmd, args, {
+    stdio: 'pipe',
+    encoding: 'utf8',
+    timeout: 120000,
+    cwd: cwd || process.cwd(),
+  });
 }
 
 function wireClaude(root) {
@@ -149,52 +157,72 @@ function wireClaude(root) {
     return null;
   }
   const results = [];
-  const oneShot = runCmd('claude', [
-    'plugin',
-    'install',
-    'aftermath',
-    '--marketplace',
-    REPO_URL,
-    '--scope',
-    'project',
-    '--yes',
-  ]);
+  const scope = 'project';
+  const oneShot = runCmd(
+    'claude',
+    [
+      'plugin',
+      'install',
+      'aftermath',
+      '--marketplace',
+      REPO_URL,
+      '--scope',
+      scope,
+      '--yes',
+    ],
+    root
+  );
   if (oneShot.status === 0) {
     results.push('claude: installed aftermath@aftermath (project scope)');
-    return results;
+  } else {
+    // Fallback for older CLIs: add marketplace, then install.
+    const add = runCmd('claude', ['plugin', 'marketplace', 'add', REPO_URL], root);
+    results.push(
+      add.status === 0
+        ? 'claude: marketplace added'
+        : `claude: marketplace add failed: ${(add.stderr || '').trim()}`
+    );
+    const inst = runCmd(
+      'claude',
+      ['plugin', 'install', 'aftermath@aftermath', '--scope', scope],
+      root
+    );
+    results.push(
+      inst.status === 0
+        ? 'claude: installed aftermath@aftermath (project scope)'
+        : `claude: plugin install failed: ${(inst.stderr || '').trim()}`
+    );
   }
-  // Fallback for older CLIs: add marketplace, then install.
-  const add = runCmd('claude', ['plugin', 'marketplace', 'add', REPO_URL]);
-  results.push(
-    add.status === 0
-      ? 'claude: marketplace added'
-      : `claude: marketplace add failed: ${(add.stderr || '').trim()}`
+  // Installing is not enough: the plugin stays disabled until it is enabled
+  // (project scope records it in .claude/settings.json).
+  const enable = runCmd(
+    'claude',
+    ['plugin', 'enable', 'aftermath@aftermath', '--scope', scope],
+    root
   );
-  const inst = runCmd('claude', [
-    'plugin',
-    'install',
-    'aftermath@aftermath',
-    '--scope',
-    'project',
-  ]);
-  results.push(
-    inst.status === 0
-      ? 'claude: installed aftermath@aftermath (project scope)'
-      : `claude: plugin install failed: ${(inst.stderr || '').trim()}`
-  );
+  if (enable.status === 0) {
+    results.push('claude: enabled aftermath@aftermath (project scope)');
+  } else {
+    const message = (enable.stderr || '').trim();
+    results.push(
+      /already enabled/i.test(message)
+        ? 'claude: aftermath already enabled (project scope)'
+        : `claude: enable failed: ${message}`
+    );
+  }
   return results;
 }
 
-function wireCodex() {
+function wireCodex(root) {
   if (!commandExists('codex')) return null;
   const results = [];
-  const add = runCmd('codex', ['plugin', 'marketplace', 'add', REPO_URL]);
+  const add = runCmd('codex', ['plugin', 'marketplace', 'add', REPO_URL], root);
   results.push(
     add.status === 0
       ? 'codex: marketplace added'
       : `codex: marketplace add failed: ${(add.stderr || '').trim()}`
   );
-  const inst = runCmd('codex', ['plugin', 'add', 'aftermath@aftermath']);
+  const inst = runCmd('codex', ['plugin', 'add', 'aftermath@aftermath'], root);
   results.push(
     inst.status === 0
       ? 'codex: installed aftermath@aftermath'
@@ -241,7 +269,7 @@ function main() {
 
   // Codex: user scope only (Codex has no project-scope plugin installs).
   try {
-    const codex = wireCodex();
+    const codex = wireCodex(root);
     if (codex) reports.push(...codex);
     else reports.push('codex: not detected (no CLI)');
   } catch (e) {

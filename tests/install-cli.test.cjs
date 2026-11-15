@@ -11,6 +11,7 @@ let prevEnv;
 let prevCwd;
 let tmp;
 let fixture;
+let shimDir;
 
 beforeEach(() => {
   prevEnv = { ...process.env };
@@ -19,7 +20,33 @@ beforeEach(() => {
   process.env.XDG_CONFIG_HOME = path.join(tmp, 'xdg');
   delete process.env.AFTERMATH_DEFAULT_MODE;
   fixture = makeCheckout(path.join(tmp, 'checkout'));
+  shimDir = path.join(tmp, 'bin');
+  fs.mkdirSync(shimDir);
+  // Hermetic: shadow the real claude/codex binaries so these tests never
+  // install anything on the developer's machine.
+  makeShim('claude');
+  makeShim('codex');
+  process.env.PATH = shimDir + path.delimiter + process.env.PATH;
 });
+
+// A recording stub: exits 0 for --version, records the call, exits 0 otherwise.
+function makeShim(name) {
+  const file = path.join(shimDir, name);
+  const log = path.join(tmp, name + '.calls');
+  fs.writeFileSync(
+    file,
+    '#!/bin/sh\n' +
+      'printf "%s %s\\n" "' +
+      name +
+      '" "$*" >> "' +
+      log +
+      '"\n' +
+      'if [ "$1" = "--version" ]; then exit 0; fi\n' +
+      'exit 0\n'
+  );
+  fs.chmodSync(file, 0o755);
+  return file;
+}
 
 afterEach(() => {
   process.chdir(prevCwd);
@@ -395,6 +422,7 @@ describe('opencode wiring', () => {
       install.main(['--source', fixture, '--host', 'all', '--dry-run'])
     );
     assert.equal(result.result, 0);
+    // Dry-run never invokes an agent CLI — it prints the manual steps.
     assert.match(result.logs.join('\n'), /marketplace add/);
     assert.match(result.logs.join('\n'), /codex plugin marketplace add/);
     assert.match(result.logs.join('\n'), /codex plugin add aftermath@aftermath/);
@@ -406,7 +434,10 @@ describe('opencode wiring', () => {
     assert.match(claudeOnly.logs.join('\n'), /opencode wiring skipped/);
 
     logs.length = 0;
-    install.printHostSteps({ host: 'claude' }, fixture, (m) => logs.push(m));
+    // dry-run keeps the manual steps (no CLI is invoked).
+    install.printHostSteps({ host: 'claude', dryRun: true }, fixture, (m) =>
+      logs.push(m)
+    );
     assert.match(logs.join('\n'), /marketplace/);
     assert.doesNotMatch(logs.join('\n'), /codex plugin/);
 
@@ -417,11 +448,30 @@ describe('opencode wiring', () => {
     assert.equal(logs.length, 0);
   });
 
+  it('automates claude and codex through their CLIs when not dry-run', () => {
+    const logs = [];
+    install.printHostSteps(
+      { host: 'all', source: false, ref: 'main', dryRun: false },
+      fixture,
+      (m) => logs.push(m)
+    );
+    assert.match(logs.join('\n'), /Claude Code: aftermath installed/);
+    assert.match(logs.join('\n'), /Codex: marketplace added/);
+    assert.match(logs.join('\n'), /Codex: plugin installed/);
+
+    const claudeCalls = fs.readFileSync(path.join(tmp, 'claude.calls'), 'utf8');
+    assert.match(claudeCalls, /plugin install aftermath --marketplace/);
+    assert.match(claudeCalls, /plugin enable aftermath@aftermath/);
+    const codexCalls = fs.readFileSync(path.join(tmp, 'codex.calls'), 'utf8');
+    assert.match(codexCalls, /plugin marketplace add/);
+    assert.match(codexCalls, /plugin add aftermath@aftermath/);
+  });
+
   it('runs Codex marketplace add and plugin add when codex is on PATH', (t) => {
     if (process.platform === 'win32') return t.skip('POSIX shell shim');
     const bin = path.join(tmp, 'bin');
     const callLog = path.join(tmp, 'codex-calls.log');
-    fs.mkdirSync(bin);
+    fs.mkdirSync(bin, { recursive: true });
     const shim = path.join(bin, 'codex');
     fs.writeFileSync(
       shim,

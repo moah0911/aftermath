@@ -491,6 +491,18 @@ function printHostSteps(opts, repoDir, log) {
           log('  /plugin install aftermath@aftermath');
         }
       }
+      // Installing leaves the plugin disabled until it is enabled.
+      try {
+        run('claude', ['plugin', 'enable', 'aftermath@aftermath', '--scope', scope]);
+        log(`Claude Code: aftermath enabled (${scope} scope).`);
+      } catch (e3) {
+        const message = e3 && e3.message ? e3.message : String(e3);
+        if (/already enabled/i.test(message)) {
+          log(`Claude Code: aftermath already enabled (${scope} scope).`);
+        } else {
+          log('Claude Code enable failed: ' + message);
+        }
+      }
     } else {
       log('Claude Code (interactive — run these two prompts):');
       log('  /plugin marketplace add moah0911/aftermath');

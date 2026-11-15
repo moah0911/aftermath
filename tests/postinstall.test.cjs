@@ -17,17 +17,20 @@ let binDir;
 let callLog;
 let prevEnv;
 
-// A fake CLI that records how it was invoked and exits 0. Keeps these tests
-// hermetic: the real claude/codex/opencode binaries are never executed and the
-// real ~/.claude, ~/.codex, ~/.config/opencode are never touched.
+// A fake CLI that records how it was invoked (including its cwd) and exits 0.
+// Keeps these tests hermetic: the real claude/codex/opencode binaries are
+// never executed and the real ~/.claude, ~/.codex, ~/.config/opencode are
+// never touched.
 function makeShim(name, exitCode = 0, stdout = '') {
   const file = path.join(binDir, name);
   fs.writeFileSync(
     file,
     '#!/bin/sh\n' +
-      'printf "%s %s\\n" "' +
+      'printf "%s %s @%s\\n" "' +
       name +
-      '" "$*" >> "' +
+      '" "$*" "' +
+      '$(pwd)' +
+      '" >> "' +
       callLog +
       '"\n' +
       // --version must succeed so the installer sees the CLI as present;
@@ -136,10 +139,27 @@ describe('postinstall', () => {
       'expected one-shot claude plugin install, got: ' + claudeCalls.join(' | ')
     );
     assert.ok(claudeCalls.some((c) => /--scope project/.test(c)));
+    // Installing leaves it disabled — the enable step must run too.
+    assert.ok(
+      claudeCalls.some((c) => /plugin enable aftermath@aftermath/.test(c)),
+      'expected claude plugin enable, got: ' + claudeCalls.join(' | ')
+    );
 
     const codexCalls = calls().filter((c) => c.startsWith('codex '));
     assert.ok(codexCalls.some((c) => /plugin marketplace add/.test(c)));
     assert.ok(codexCalls.some((c) => /plugin add aftermath@aftermath/.test(c)));
+
+    // Every agent CLI *wiring* call must run from the PROJECT root — npm runs
+    // lifecycle scripts with cwd = the package dir, and Claude Code resolves
+    // project scope (and writes .claude/settings.json) from the cwd.
+    // (The --version presence probe is exempt: it has no project semantics.)
+    const wiringCalls = [...claudeCalls, ...codexCalls].filter(
+      (c) => !/--version/.test(c)
+    );
+    assert.ok(wiringCalls.length > 0);
+    for (const call of wiringCalls) {
+      assert.match(call, new RegExp('@' + proj.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'));
+    }
   });
 
   it('reports agents that are not installed without failing', () => {
