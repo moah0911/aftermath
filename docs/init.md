@@ -17,6 +17,24 @@ npx @after.math/aftermath init --run-tests     # also record a baseline (opt-in)
 From a checkout, use `node scripts/init.js` with the same flags. The slash command
 `/aftermath-init` runs the same flow and summarizes the result.
 
+Python toolchains can run the same flow without Node.js:
+
+```bash
+uv run --project . python -m afm init     # from a checkout (PyPI release pending)
+```
+
+## What init writes
+
+| Path | Scope | Contents |
+|------|-------|----------|
+| `.aftermath/config.json` | project | detected stacks, test/build commands, `safePaths`, `protectedPaths`, `destructiveAllowlist` |
+| `.aftermath/baseline.json` | project | only with `--run-tests` — the green reference for recovery |
+| `opencode.json` | project | `"plugin": ["./.opencode/plugins/aftermath.mjs"]` |
+| `.opencode/plugins/`, `.opencode/commands/`, `hooks/`, `skills/` | project | copies of the runtime assets (never symlinks into `node_modules`) |
+
+Project wiring **copies** the plugin, commands, hooks, and skills into the project so the
+wiring survives npm pruning `node_modules`. Files you have edited are never overwritten.
+
 ## Flags
 
 | Flag | Effect |

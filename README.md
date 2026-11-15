@@ -1,6 +1,7 @@
 # Aftermath — post-failure recovery skill for AI coding agents
 
 [![skills.sh](https://skills.sh/b/moah0911/aftermath)](https://skills.sh/moah0911/aftermath)
+[![npm](https://img.shields.io/npm/v/@after.math/aftermath)](https://www.npmjs.com/package/@after.math/aftermath)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ![Aftermath logo](assets/logo.png)
@@ -13,7 +14,7 @@ Most agent skills teach how to build. Aftermath teaches how to **stop and recove
 ```
  ██  ████ █████ ████ ███  █   █  ██  █████ █  █
 █  █ █      █   █    █  █ ██ ██ █  █   █   █  █
-████ ███    █   ███  ███  █ █ █ ████   █   ████
+███ ███    █   ███  ███  █ █ █ ████   █   ████
 █  █ █      █   █    █ █  █   █ █  █   █   █  █
 █  █ █      █   ████ █  █ █   █ █  █   █   █  █
 
@@ -21,31 +22,51 @@ Most agent skills teach how to build. Aftermath teaches how to **stop and recove
 ```
 </details>
 
-## The ladder (`AFTERMATH.md`)
+## Two names, one project
 
-After any failure, stop at the first rung that holds:
+| Namespace | Identifier | Used for |
+|-----------|-----------|----------|
+| **npm** | `@after.math/aftermath` | The npm package: `npm i @after.math/aftermath`, `npx @after.math/aftermath init` |
+| **GitHub** | `moah0911/aftermath` | The repo: source for Claude Code / Codex marketplaces, skills, curl installer |
 
-1. Uncommitted / one file / cheap to undo? → Revert now. Do not patch forward.
-2. Last-known-good exists? → Diff it, isolate one change, revert just that.
-3. 2nd+ failed attempt at the same fix? → State exact error, state theory, ask.
-4. Next action irreversible? → Confirm state explicitly. Never assume.
-5. Filling a gap with a guess? → Say so out loud.
-6. User just corrected you? → Do not defend. Find the diff. Fix only that.
+The npm scope is the publisher's npm account (`after.math`); the GitHub org is `moah0911`. They are different namespaces — use the npm scope for npm commands and the GitHub org for marketplace/source commands.
 
-Honesty under pressure: never hide a break, never silently revert, never invent an unverified root cause.
+## Install
 
-## Initialize a project
+```bash
+npm i @after.math/aftermath      # project scope: wires the agent(s) in this project
+npm i -g @after.math/aftermath    # global: installs the CLI; run `aftermath-install` for user scope
+```
+
+The install script wires whichever agents it finds on your machine:
+
+| Agent | What happens on `npm i` |
+|-------|--------------------------|
+| **OpenCode** | Plugin, commands, hooks, and skills are copied into the project; `opencode.json` gets `"plugin": ["./.opencode/plugins/aftermath.mjs"]` (a relative path — no symlinks into `node_modules`, which npm prunes) |
+| **Claude Code** | `claude plugin install aftermath --marketplace moah0911/aftermath --scope project` (Claude ≥ 2.1.292; older versions fall back to `claude plugin marketplace add moah0911/aftermath` + `claude plugin install aftermath@aftermath`) |
+| **Codex** | `codex plugin marketplace add moah0911/aftermath` + `codex plugin add aftermath@aftermath` (Codex has no project scope — this is user scope) |
+
+Not installed? Nothing is touched for that agent — the summary just says "not detected".
+
+Opt out entirely with `AFM_SKIP_INSTALL=1` or npm's `--ignore-scripts`.
+
+### User scope (all projects)
+
+```bash
+aftermath-install                 # wire every detected agent for the current user
+aftermath-install --host codex    # one agent
+aftermath-install --dry-run       # show what would change
+aftermath-install --uninstall     # remove the wiring
+```
+
+User-scope OpenCode wiring stages a durable copy under `~/.config/aftermath/runtime/` and points `~/.config/opencode/opencode.json` at it.
+
+### Initialize a project
 
 ```bash
 npx @after.math/aftermath init          # detect stack + write .aftermath/config.json
 npx @after.math/aftermath init --dry-run --json
 npx @after.math/aftermath init --run-tests   # also record a baseline (opt-in)
-```
-
-Python toolchains, no node required:
-
-```bash
-uvx afm-recovery init        # same init flow via PyPI wheel (pipx install afm-recovery)
 ```
 
 Init detects test/build commands, disposable artifacts, and protected paths, then writes
@@ -69,6 +90,28 @@ Full flags, detection matrix, config schema, and policy reasons: [`docs/init.md`
   "destructiveAllowlist": []
 }
 ```
+
+### Python toolchains (no Node.js needed)
+
+The same `init` flow ships as a standalone Python wheel — stdlib only, no runtime dependencies:
+
+```bash
+uv run --project . python -m afm init     # from a checkout
+# PyPI publish is pending — `uvx afm-recovery init` will work once released.
+```
+
+## The ladder (`AFTERMATH.md`)
+
+After any failure, stop at the first rung that holds:
+
+1. Uncommitted / one file / cheap to undo? → Revert now. Do not patch forward.
+2. Last-known-good exists? → Diff it, isolate one change, revert just that.
+3. 2nd+ failed attempt at the same fix? → State exact error, state theory, ask.
+4. Next action irreversible? → Confirm state explicitly. Never assume.
+5. Filling a gap with a guess? → Say so out loud.
+6. User just corrected you? → Do not defend. Find the diff. Fix only that.
+
+Honesty under pressure: never hide a break, never silently revert, never invent an unverified root cause.
 
 ## What the plugin enforces
 
@@ -123,62 +166,12 @@ Project: `.aftermath/config.json` (written by `aftermath init`; found by walking
 - `/aftermath-checkpoint status|clear|restore` — inspect, clear, or manually restore checkpoints
 - `/aftermath-init` — initialize the project with destructive-safe paths
 
-## Install
+## Other install paths
 
-| Harness | Install | What you get |
-|---------|---------|--------------|
-| Any skills-compatible agent | `npx skills add moah0911/aftermath -g -y` | The eight on-demand skills |
-| OpenCode | npm plugin or curl installer | Ladder injection, guards, checkpoints, commands, skills |
-| Claude Code | plugin marketplace | SessionStart/UserPromptSubmit/PreToolUse/PostToolUse hooks, commands, skills |
-| Codex | `codex plugin marketplace add moah0911/aftermath --ref main && codex plugin add aftermath@aftermath` | Shared hooks and skills |
-| Checkout / manual | `node scripts/install.js` | Host wiring from a clone |
+<details>
+<summary>Checkout / manual, curl bootstrapper, skills-only</summary>
 
-### OpenCode
-
-Add the npm package to `opencode.json`:
-
-```json
-{ "plugin": ["@after.math/aftermath"] }
-```
-
-Or install globally with the curl bootstrapper (plugin + commands + skills):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
-  | bash -s --
-```
-
-### Claude Code
-
-```text
-/plugin marketplace add moah0911/aftermath
-/plugin install aftermath@aftermath
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add moah0911/aftermath --ref main && codex plugin add aftermath@aftermath
-```
-
-The marketplace must be registered before the plugin is installed. The Aftermath
-installer runs both commands automatically when `codex` is on `PATH`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh \
-  | bash -s -- --host codex
-```
-
-### Any skills-compatible agent
-
-```bash
-npx skills add moah0911/aftermath -g -y
-```
-
-This installs the skills only. Hosts with lifecycle hooks get the fuller enforcement;
-see [`docs/agent-portability.md`](docs/agent-portability.md).
-
-### Checkout / manual
+**Checkout / manual:**
 
 ```bash
 git clone https://github.com/moah0911/aftermath
@@ -187,52 +180,90 @@ node aftermath/scripts/install.js --project --host all
 
 `--host opencode|claude|codex|all` filters the host steps, `--source` uses an existing
 checkout, `--mode lite|full|ultra|off` persists a default level, `--dry-run` prints the
-actions, and `--uninstall` removes the wiring. OpenCode is wired in place; Codex is
-installed through its CLI when available; Claude Code prints its two interactive
-marketplace prompts.
+actions, and `--uninstall` removes the wiring. OpenCode is wired by copying assets into
+the project; Claude Code and Codex are installed through their CLIs when available.
 
-Manual OpenCode wiring:
-
-```json
-{ "plugin": ["./.opencode/plugins/aftermath.mjs"] }
-```
-
-### Initialize the project
-
-After installing, run the project initializer once. It detects stacks/test commands and
-writes `.aftermath/config.json` with destructive-safe paths:
+**Curl bootstrapper (no npm):**
 
 ```bash
-npx @after.math/aftermath init
-# or from a checkout:
-node aftermath/scripts/init.js
+curl -fsSL https://raw.githubusercontent.com/moah0911/aftermath/main/scripts/install.sh | bash -s --
 ```
 
-See [`docs/init.md`](docs/init.md) for flags, detection, and policy details. Restart the
-host after installing if it does not reload plugins automatically.
+**Any skills-compatible agent (skills only):**
+
+```bash
+npx skills add moah0911/aftermath -g -y
+```
+
+This installs the skills only. Hosts with lifecycle hooks get the fuller enforcement;
+see [`docs/agent-portability.md`](docs/agent-portability.md).
+
+</details>
+
+## Uninstall
+
+```bash
+npm uninstall @after.math/aftermath      # removes staged project assets + the opencode entry
+aftermath-install --uninstall             # removes user-scope wiring
+```
+
+Both only delete files they created — anything you edited is left in place. Claude Code
+and Codex plugins are removed through their own CLIs when present.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `npm error 404 ... Scope not found` | Scope doesn't match your npm account | The scope must equal your npm username (`@after.math` for account `after.math`). Scopes are case-sensitive and dots are literal. |
+| `npx @after.math/aftermath init` prints "No matching version found" | npm's metadata CDN lags a fresh publish by a few minutes | Retry in a minute, or pin the exact tarball URL: `npx https://registry.npmjs.org/@after.math/aftermath/-/aftermath-0.6.0.tgz` |
+| Plugin loads but skills are missing | OpenCode caches plugin config at startup | Restart the agent after installing |
+| `aftermath init` doesn't detect your stack | No recognized manifest in the project root | Run it from the project root; see the detection matrix in [`docs/init.md`](docs/init.md) |
+| Claude Code: "invalid manifest file" | Plugin manifest shape | Must be `author` as an object and `skills`/`hooks` starting with `./` — fixed in 0.6.0 |
+| Install script did nothing | Opted out or global install | `npm i` without `--ignore-scripts` and without `AFM_SKIP_INSTALL=1`; global installs need `aftermath-install` |
+
+Node.js ≥ 18 is required (the installer and plugin use modern APIs).
 
 ## Layout
 
 ```
 AFTERMATH.md          # the ladder — always loaded, ~dozen lines
 SKILL.md              # root skill entry (discovery pointer)
+AGENTS.md             # agent-facing ruleset pointer
 assets/               # logo.png, icon.png, aftermath.txt (via scripts/make-logo.py)
 docs/                 # init/config and agent-portability references
 hooks/                # config, instruction builder, signals, checkpoints, policy, host hooks
 skills/               # aftermath + 7 failure-category playbooks
 commands/             # portable slash commands (mirrored to .opencode/commands/)
 .opencode/plugins/    # server plugin (ladder injection + enforcement + tripwires)
-scripts/              # init.js, cli.js, install.js, install.sh, consistency checks
-tests/                # node:test suite
+scripts/              # cli.js, init.js, install.js, postinstall.js, postuninstall.js, checks
+src/afm/              # Python port of init (stdlib only; PyPI: afm-recovery, pending)
+pyproject.toml        # Python packaging
+tests/                # node:test suite + python unittest suite
 ```
 
 ## Verify
 
 ```bash
 npm test              # full node:test suite
+npm run test:py       # python suite (incl. node↔python parity)
 npm run test:coverage # runtime coverage gate (95% lines / 85% branches / 98% funcs)
-npm run check         # rule-copy + command sync + version alignment
+npm run check         # rule-copy + version alignment
 ```
+
+## Release
+
+Versions are kept in lockstep across `package.json`, `.claude-plugin/plugin.json`,
+`.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `pyproject.toml`, and
+`src/afm/__init__.py` — `npm run check` fails if they drift.
+
+```bash
+npm version patch     # bump everywhere, then npm run check
+npm publish --access public
+```
+
+The GitHub Actions workflows (`.github/workflows/npm-publish*.yml`) publish on GitHub
+release events when the `npm_token` repository secret is present; without it, publish
+locally as above.
 
 ## License
 

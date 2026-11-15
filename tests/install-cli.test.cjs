@@ -84,14 +84,32 @@ describe('installer preflight and repo handling', () => {
   it('reports clone and cached-update dry-runs without writing', () => {
     const logs = [];
     const opts = { source: null, ref: 'main', dryRun: true };
-    install.ensureRepo(opts, (m) => logs.push(m));
-    assert.match(logs.join('\n'), /cloning/);
-    assert.equal(fs.existsSync(install.repoCacheDir()), false);
+    // When run from a packaged checkout (npm install), the package itself is
+    // the source — no clone. AFM_FORCE_CLONE exercises the clone path.
+    process.env.AFM_FORCE_CLONE = '1';
+    try {
+      install.ensureRepo(opts, (m) => logs.push(m));
+      assert.match(logs.join('\n'), /cloning/);
+      assert.equal(fs.existsSync(install.repoCacheDir()), false);
 
-    fs.mkdirSync(path.join(install.repoCacheDir(), '.git'), { recursive: true });
-    logs.length = 0;
-    install.ensureRepo(opts, (m) => logs.push(m));
-    assert.match(logs.join('\n'), /updating cached clone/);
+      fs.mkdirSync(path.join(install.repoCacheDir(), '.git'), { recursive: true });
+      logs.length = 0;
+      install.ensureRepo(opts, (m) => logs.push(m));
+      assert.match(logs.join('\n'), /updating cached clone/);
+    } finally {
+      delete process.env.AFM_FORCE_CLONE;
+      fs.rmSync(install.repoCacheDir(), { recursive: true, force: true });
+    }
+  });
+
+  it('uses the packaged checkout as the source when installed from npm', () => {
+    const logs = [];
+    const dir = install.ensureRepo(
+      { source: null, ref: 'main', dryRun: true },
+      (m) => logs.push(m)
+    );
+    assert.match(logs.join('\n'), /using packaged install/);
+    assert.equal(dir, path.join(__dirname, '..'));
   });
 
   it('rejects invalid source paths through cli', () => {
@@ -209,21 +227,46 @@ describe('opencode wiring', () => {
     );
     assert.equal(cfg.$schema, 'https://opencode.ai/config.json');
     assert.deepEqual(cfg.plugin, [
-      path.join(fixture, '.opencode', 'plugins', 'aftermath.mjs'),
+      path.join(
+        process.env.XDG_CONFIG_HOME,
+        'aftermath',
+        'runtime',
+        '.opencode',
+        'plugins',
+        'aftermath.mjs'
+      ),
     ]);
     assert.equal(
       fs.readFileSync(path.join(scope, '.aftermath-active'), 'utf8'),
       'ultra'
     );
-    assert.equal(
-      fs.readlinkSync(path.join(scope, 'commands', 'one.md')),
-      path.join(fixture, '.opencode', 'commands', 'one.md')
+    // Global scope stages durable copies (no symlink into a cache/clone).
+    const runtime = path.join(
+      process.env.XDG_CONFIG_HOME,
+      'aftermath',
+      'runtime',
+      '.opencode',
+      'commands'
+    );
+    assert.equal(fs.readFileSync(path.join(runtime, 'one.md'), 'utf8'), 'ONE\n');
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          process.env.XDG_CONFIG_HOME,
+          'aftermath',
+          'runtime',
+          '.opencode',
+          'plugins',
+          'aftermath.mjs'
+        )
+      )
     );
 
     logs.length = 0;
     install.wireOpencode(opts, fixture, (m) => logs.push(m));
     assert.match(logs.join('\n'), /plugin entry already present/);
-    assert.match(logs.join('\n'), /0 linked, 2 already in place/);
+    assert.match(logs.join('\n'), /already in place/);
+    assert.match(logs.join('\n'), /0 copied, 3 already in place/);
   });
 
   it('wires a project by staging copies with a relative plugin spec', () => {

@@ -27,7 +27,7 @@ describe('installation documentation', () => {
       '@after.math/aftermath',
       'plugin marketplace add moah0911/aftermath',
       'plugin install aftermath@aftermath',
-      'codex plugin marketplace add moah0911/aftermath --ref main',
+      'codex plugin marketplace add moah0911/aftermath',
       'codex plugin add aftermath@aftermath',
       'node aftermath/scripts/install.js',
       'npx @after.math/aftermath init',
@@ -37,6 +37,27 @@ describe('installation documentation', () => {
     assert.match(readme, /--host codex/);
     assert.match(readme, /docs\/init\.md/);
     assert.match(readme, /docs\/agent-portability\.md/);
+  });
+
+  it('documents the npm install behavior and the scope split', () => {
+    // `npm i` must be documented as wiring the detected agents...
+    assert.match(readme, /npm i @after\.math\/aftermath/);
+    assert.match(readme, /npm i -g @after\.math\/aftermath/);
+    for (const host of ['OpenCode', 'Claude Code', 'Codex']) {
+      assert.ok(readme.includes(host), `README missing ${host}`);
+    }
+    // ...and the two-namespace split must be explicit.
+    assert.match(readme, /moah0911\/aftermath/);
+    assert.match(readme, /Two names, one project/);
+    // Opt-outs and uninstall must be documented.
+    assert.match(readme, /AFM_SKIP_INSTALL=1/);
+    assert.match(readme, /--ignore-scripts/);
+    assert.match(readme, /npm uninstall @after\.math\/aftermath/);
+    assert.match(readme, /aftermath-install --uninstall/);
+    // Troubleshooting + dev flow.
+    assert.match(readme, /Troubleshooting/);
+    assert.match(readme, /npm run test:py/);
+    assert.match(readme, /Scope not found/);
   });
 
   it('documents all hosts in the portability matrix', () => {

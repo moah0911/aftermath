@@ -112,12 +112,32 @@ function validateRepo(dir) {
   }
 }
 
+// When installed from npm, the package itself is a complete checkout — use it
+// as the source instead of cloning (faster, works offline, exact version).
+// AFM_FORCE_CLONE=1 forces the clone path (used by tests and by callers that
+// deliberately want the latest main branch).
+function packagedCheckout() {
+  if (process.env.AFM_FORCE_CLONE === '1') return null;
+  const dir = path.join(__dirname, '..');
+  const need = [
+    'AFTERMATH.md',
+    path.join('.opencode', 'plugins', PLUGIN_BASENAME),
+    path.join('.opencode', 'commands'),
+  ];
+  return need.every((rel) => fs.existsSync(path.join(dir, rel))) ? dir : null;
+}
+
 function ensureRepo(opts, log) {
   if (opts.source) {
     const dir = path.resolve(opts.source);
     validateRepo(dir);
     log(`using local source: ${dir}`);
     return dir;
+  }
+  const packaged = packagedCheckout();
+  if (packaged) {
+    log(`using packaged install: ${packaged}`);
+    return packaged;
   }
   const dir = repoCacheDir();
   if (fs.existsSync(path.join(dir, '.git'))) {
@@ -314,6 +334,24 @@ function stageProjectAssets(repoDir, root, opts, log) {
   return { totals, perArea };
 }
 
+// User-scope OpenCode wiring: stage a durable copy of the plugin + commands +
+// hooks + skills under $XDG_CONFIG_HOME/aftermath/runtime, and register that
+// copy in the global opencode.json. Idempotent; returns saved file count.
+function stageGlobalAssets(repoDir, opts, log) {
+  const runtime = globalRuntimeDir();
+  const totals = { copied: 0, skipped: 0 };
+  for (const rel of PROJECT_ASSET_DIRS) {
+    const srcDir = path.join(repoDir, ...rel);
+    for (const file of walkFiles(srcDir)) {
+      const src = path.join(srcDir, file);
+      const dest = path.join(runtime, ...rel, file);
+      const outcome = copyFileIfNeeded(src, dest, opts, log);
+      totals[outcome === 'copied' ? 'copied' : 'skipped']++;
+    }
+  }
+  return { runtime, totals };
+}
+
 function unstageProjectAssets(repoDir, root, opts, log) {
   let removed = 0;
   for (const rel of PROJECT_ASSET_DIRS) {
@@ -353,15 +391,27 @@ function unstageProjectAssets(repoDir, root, opts, log) {
 
 const PROJECT_PLUGIN_SPEC = './.opencode/plugins/' + PLUGIN_BASENAME;
 
+// User-scope OpenCode wiring stages a durable copy under the config home and
+// registers that copy in the global opencode.json. Copy (not symlink) so the
+// wiring survives npm pruning node_modules or a changed repo cache.
+const GLOBAL_RUNTIME_DIR = path.join('aftermath', 'runtime');
+
+function globalRuntimeDir() {
+  return path.join(configBase(), GLOBAL_RUNTIME_DIR);
+}
+
 function wireOpencode(opts, repoDir, log) {
   const scope = opts.project ? process.cwd() : path.join(configBase(), 'opencode');
   const cmdDir = opts.project
     ? path.join(scope, '.opencode', 'commands')
     : path.join(scope, 'commands');
   const file = path.join(scope, 'opencode.json');
-  // Project scope stages copies into the project, so the spec is always the
-  // portable relative path. Global scope points at the persistent wired copy.
-  const spec = opts.project ? PROJECT_PLUGIN_SPEC : pluginSpec(repoDir, null);
+  // Project scope stages copies into the project, so the spec is the portable
+  // relative path. Global scope stages copies under the config home and points
+  // at that durable copy — never a symlink into node_modules or a repo clone.
+  const spec = opts.project
+    ? PROJECT_PLUGIN_SPEC
+    : path.join(globalRuntimeDir(), '.opencode', 'plugins', PLUGIN_BASENAME);
 
   if (opts.uninstall) {
     if (!fs.existsSync(file)) {
@@ -384,8 +434,8 @@ function wireOpencode(opts, repoDir, log) {
       const { removed } = unstageProjectAssets(repoDir, scope, opts, log);
       log(`removed ${removed} staged file(s)`);
     } else {
-      const { removed } = unlinkCommands(repoDir, cmdDir, opts, log);
-      log(`removed ${removed} command link(s)`);
+      const { removed } = unstageProjectAssets(repoDir, globalRuntimeDir(), opts, log);
+      log(`removed ${removed} global staged file(s)`);
     }
     return;
   }
@@ -411,8 +461,9 @@ function wireOpencode(opts, repoDir, log) {
     log(`assets staged: ${summary} (${totals.copied} copied, ${totals.skipped} already in place)`);
     log('skills auto-register via the plugin config hook — no action needed');
   } else {
-    const { linked, skipped } = linkCommands(repoDir, cmdDir, opts, log);
-    log(`commands: ${linked} linked, ${skipped} already in place`);
+    const { runtime, totals } = stageGlobalAssets(repoDir, opts, log);
+    log(`global assets staged under ${runtime} (${totals.copied} copied, ${totals.skipped} already in place)`);
+    log(`plugin entry points at ${runtime}/.opencode/plugins/${PLUGIN_BASENAME}`);
     log('skills auto-register via the plugin config hook — no action needed');
   }
 }
@@ -420,9 +471,31 @@ function wireOpencode(opts, repoDir, log) {
 function printHostSteps(opts, repoDir, log) {
   if (opts.uninstall) return;
   if (wants('claude', opts)) {
-    log('Claude Code (interactive — run these two prompts):');
-    log('  /plugin marketplace add moah0911/aftermath');
-    log('  /plugin install aftermath@aftermath');
+    const scope = opts.project ? 'project' : 'user';
+    if (!opts.dryRun && commandExists('claude')) {
+      try {
+        const oneShot = run(
+          'claude',
+          ['plugin', 'install', 'aftermath', '--marketplace', REPO_URL, '--scope', scope, '--yes']
+        );
+        log(`Claude Code: aftermath installed (${scope} scope).`);
+      } catch (e) {
+        try {
+          run('claude', ['plugin', 'marketplace', 'add', REPO_URL]);
+          run('claude', ['plugin', 'install', 'aftermath@aftermath', '--scope', scope]);
+          log(`Claude Code: aftermath installed (${scope} scope).`);
+        } catch (e2) {
+          log('Claude Code install failed: ' + (e2 && e2.message ? e2.message : e2));
+          log('  run manually:');
+          log('  /plugin marketplace add moah0911/aftermath');
+          log('  /plugin install aftermath@aftermath');
+        }
+      }
+    } else {
+      log('Claude Code (interactive — run these two prompts):');
+      log('  /plugin marketplace add moah0911/aftermath');
+      log('  /plugin install aftermath@aftermath');
+    }
   }
   if (wants('codex', opts)) {
     const source = opts.source ? repoDir : REPO_URL;
@@ -515,11 +588,14 @@ module.exports = {
   repoCacheDir,
   preflight,
   validateRepo,
+  packagedCheckout,
   ensureRepo,
   linkCommands,
   unlinkCommands,
   stageProjectAssets,
   unstageProjectAssets,
+  stageGlobalAssets,
+  globalRuntimeDir,
   walkFiles,
   copyFileIfNeeded,
   PROJECT_PLUGIN_SPEC,

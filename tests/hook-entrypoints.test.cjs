@@ -332,6 +332,14 @@ describe('shared hook lifecycle config', () => {
     const codex = JSON.parse(
       fs.readFileSync(path.join(root, '.codex-plugin', 'plugin.json'), 'utf8')
     );
-    assert.equal(codex.hooks, '../hooks/claude-codex-hooks.json');
+    // Claude/Codex plugin manifests must use plugin-root-relative paths
+    // ("./hooks/…"), not parent-relative ones — claude plugin rejects "../".
+    assert.equal(codex.hooks, './hooks/claude-codex-hooks.json');
+    const claude = JSON.parse(
+      fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8')
+    );
+    assert.equal(claude.hooks, './hooks/claude-codex-hooks.json');
+    assert.equal(claude.skills, './skills/');
+    assert.equal(typeof claude.author, 'object');
   });
 });
