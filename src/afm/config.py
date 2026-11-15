@@ -33,7 +33,14 @@ def merge_config(existing: dict, generated: dict, *, force: bool = False) -> dic
     if not isinstance(merged.get("packageManager"), str):
         merged["packageManager"] = generated.get("packageManager")
     for key in ("stacks", "testCommands", "buildCommands", "safePaths"):
-        if force or not isinstance(merged.get(key), list):
+        # An empty array means "nothing detected yet" — regenerate it so a
+        # later init picks up newly detected values without --force.
+        existing_value = merged.get(key)
+        if (
+            force
+            or not isinstance(existing_value, list)
+            or len(existing_value) == 0
+        ):
             merged[key] = generated.get(key)
     if force or not isinstance(merged.get("protectedPaths"), list):
         merged["protectedPaths"] = generated.get("protectedPaths")

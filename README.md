@@ -69,6 +69,11 @@ npx @after.math/aftermath init --dry-run --json
 npx @after.math/aftermath init --run-tests   # also record a baseline (opt-in)
 ```
 
+`init` wires **only the agent you are running in** — it detects OpenCode,
+Claude Code (`CLAUDECODE`), or Codex (`CODEX_*`) and never touches another
+agent's configuration. Use `--host opencode|claude|codex|all` (or
+`AFTERMATH_HOST=<host>`) to choose explicitly.
+
 Init detects test/build commands, disposable artifacts, and protected paths, then writes
 `.aftermath/config.json`. From then on, `rm -rf node_modules` or `rm -rf dist` is allowed
 while `rm -rf src`, `.env`, `.git`, and unknown targets stay blocked. It never runs
@@ -220,6 +225,7 @@ and Codex plugins are removed through their own CLIs when present.
 | `aftermath init` doesn't detect your stack | No recognized manifest in the project root | Run it from the project root; see the detection matrix in [`docs/init.md`](docs/init.md) |
 | Claude Code: "invalid manifest file" | Plugin manifest shape | Must be `author` as an object and `skills`/`hooks` starting with `./` — fixed in 0.6.0 |
 | Install script did nothing | Opted out or global install | `npm i` without `--ignore-scripts` and without `AFM_SKIP_INSTALL=1`; global installs need `aftermath-install` |
+| `init` wired the wrong agent | Host auto-detection picked another one | `init --host opencode` (or set `AFTERMATH_HOST=opencode`) |
 
 Node.js ≥ 18 is required (the installer and plugin use modern APIs).
 

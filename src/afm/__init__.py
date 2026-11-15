@@ -8,7 +8,7 @@ The OpenCode runtime assets (plugin, commands, hooks, skills) ship as package
 data under afm/assets/ and are copied into the target project on init.
 """
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 CONFIG_VERSION = 1
 
 ALWAYS_PROTECTED = [".git", ".env*", "secrets*", "*.pem", "*.key"]

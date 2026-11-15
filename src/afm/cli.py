@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,11 +23,14 @@ def usage() -> str:
             "  --dir <path>      project directory (default: cwd)",
             "  --dry-run         print actions, write nothing",
             "  --no-wire         write config without installing host wiring",
-            "  --host <h>        opencode|claude|codex|all (default: all)",
+            "  --host <h>        auto|opencode|claude|codex|all (default: auto)",
             "  --run-tests       run the detected test command once and record a baseline",
             "  --force           replace generated arrays instead of preserving existing ones",
             "  --json            machine-readable output",
             "  -h, --help        this text",
+            "",
+            "auto wires only the agent you are running in (CLAUDECODE / CODEX_* env",
+            "signals, otherwise opencode). Override with AFTERMATH_HOST=<host>.",
         ]
     )
 
@@ -50,10 +54,25 @@ def translate_error(message: str) -> str:
     return message
 
 
+HOSTS = ["auto", "opencode", "claude", "codex", "all"]
+
+
+def detect_host() -> str:
+    """Which agent is running this? Env signals only — mirrors init.js."""
+    override = os.environ.get("AFTERMATH_HOST", "").strip().lower()
+    if override in HOSTS and override != "auto":
+        return override
+    if os.environ.get("CLAUDECODE"):
+        return "claude"
+    if os.environ.get("CODEX_THREAD_ID") or os.environ.get("CODEX_SANDBOX"):
+        return "codex"
+    return "opencode"
+
+
 def parse_args(argv):
     parser = _Parser(prog="afm init", add_help=False, allow_abbrev=False)
     parser.add_argument("--dir", default=None)
-    parser.add_argument("--host", default="all")
+    parser.add_argument("--host", default="auto")
     parser.add_argument("--dry-run", action="store_true", dest="dry_run")
     parser.add_argument("--no-wire", action="store_true", dest="no_wire")
     parser.add_argument("--run-tests", action="store_true", dest="run_tests")
@@ -67,8 +86,8 @@ def parse_args(argv):
         value = getattr(raw, flag)
         if value is not None and isinstance(value, str) and value.startswith("--"):
             raise ValueError(f"--{flag} needs a value")
-    if raw.host not in ["opencode", "claude", "codex", "all"]:
-        raise ValueError("--host must be one of: opencode|claude|codex|all")
+    if raw.host not in HOSTS:
+        raise ValueError("--host must be one of: " + "|".join(HOSTS))
     if raw.dir is not None and raw.dir.startswith("--"):
         raise ValueError("--dir needs a value")
     return raw
@@ -93,6 +112,7 @@ def main(argv) -> int:
     existing = read_config_file(root)
     config = merge_config(existing, generated, force=opts.force)
     actions = []
+    host = detect_host() if opts.host == "auto" else opts.host
 
     if opts.dry_run:
         actions.append("would write .aftermath/config.json")
@@ -103,11 +123,13 @@ def main(argv) -> int:
     if opts.no_wire:
         actions.append("host wiring skipped")
     elif opts.dry_run:
-        actions.append("would wire hosts: " + opts.host)
+        actions.append("would wire hosts: " + host)
     else:
         install_logs = []
-        wire_project(root, install_logs.append, opts.dry_run)
-        print_host_steps(opts.host, install_logs.append)
+        if host in ("all", "opencode"):
+            wire_project(root, install_logs.append, opts.dry_run)
+        if host in ("all", "claude", "codex"):
+            print_host_steps(host, install_logs.append)
         actions.extend(install_logs)
 
     baseline = None

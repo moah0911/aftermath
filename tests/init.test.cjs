@@ -279,6 +279,104 @@ describe('init CLI', () => {
     assert.equal(fs.existsSync(path.join(dir, '.aftermath')), false);
   });
 
+  it('detects the running host from env signals', () => {
+    const prev = { ...process.env };
+    try {
+      delete process.env.CLAUDECODE;
+      delete process.env.CODEX_THREAD_ID;
+      delete process.env.CODEX_SANDBOX;
+      delete process.env.AFTERMATH_HOST;
+      assert.equal(init.detectHost(), 'opencode');
+
+      process.env.CLAUDECODE = '1';
+      assert.equal(init.detectHost(), 'claude');
+
+      delete process.env.CLAUDECODE;
+      process.env.CODEX_THREAD_ID = 'abc';
+      assert.equal(init.detectHost(), 'codex');
+
+      delete process.env.CODEX_THREAD_ID;
+      process.env.AFTERMATH_HOST = 'codex';
+      assert.equal(init.detectHost(), 'codex');
+    } finally {
+      process.env = prev;
+    }
+  });
+
+  it('defaults --host to auto and resolves it for wiring', () => {
+    const dir = nodeProject();
+    const prev = { ...process.env };
+    try {
+      delete process.env.CLAUDECODE;
+      delete process.env.CODEX_THREAD_ID;
+      delete process.env.CODEX_SANDBOX;
+      delete process.env.AFTERMATH_HOST;
+      const { result, logs } = capture(() =>
+        init.main(['--dir', dir, '--dry-run', '--json'])
+      );
+      assert.equal(result, 0);
+      const payload = JSON.parse(logs.join('\n'));
+      // Default host is the detected one — never "all".
+      assert.ok(payload.actions.includes('would wire hosts: opencode'));
+      assert.ok(!payload.actions.includes('would wire hosts: all'));
+    } finally {
+      process.env = prev;
+    }
+  });
+
+  it('rejects an unknown host', () => {
+    const dir = nodeProject();
+    const { result, errors } = capture(() =>
+      init.cli(['--dir', dir, '--host', 'vscode'])
+    );
+    assert.equal(result, 1);
+    assert.match(errors.join('\n'), /--host must be one of/);
+  });
+
+  it('regenerates empty arrays so a second init picks up new detections', () => {
+    const dir = nodeProject();
+    // First init with no test script -> empty testCommands.
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'x', version: '1.0.0' })
+    );
+    capture(() => init.main(['--dir', dir, '--no-wire']));
+    let config = JSON.parse(
+      fs.readFileSync(path.join(dir, '.aftermath', 'config.json'), 'utf8')
+    );
+    assert.deepEqual(config.testCommands, []);
+
+    // A test script appears — a plain re-init (no --force) must pick it up.
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'x',
+        version: '1.0.0',
+        scripts: { test: 'node --test' },
+      })
+    );
+    capture(() => init.main(['--dir', dir, '--no-wire']));
+    config = JSON.parse(
+      fs.readFileSync(path.join(dir, '.aftermath', 'config.json'), 'utf8')
+    );
+    assert.deepEqual(config.testCommands, ['npm test']);
+  });
+
+  it('preserves user-set non-empty arrays', () => {
+    const dir = nodeProject();
+    fs.mkdirSync(path.join(dir, '.aftermath'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, '.aftermath', 'config.json'),
+      JSON.stringify({ testCommands: ['custom test'], safePaths: ['custom-safe'] })
+    );
+    capture(() => init.main(['--dir', dir, '--no-wire']));
+    const config = JSON.parse(
+      fs.readFileSync(path.join(dir, '.aftermath', 'config.json'), 'utf8')
+    );
+    assert.deepEqual(config.testCommands, ['custom test']);
+    assert.deepEqual(config.safePaths, ['custom-safe']);
+  });
+
   it('writes config and skips wiring with --no-wire', () => {
     const dir = nodeProject();
     const { result } = capture(() =>

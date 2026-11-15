@@ -278,6 +278,70 @@ class UnitTests(unittest.TestCase):
         )
         self.assertEqual(written["status"], "failed")
 
+    # --- host detection -----------------------------------------------------
+    def test_detect_host_from_env_signals(self):
+        import os
+
+        from afm.cli import detect_host
+
+        saved = {
+            k: os.environ.get(k)
+            for k in ("CLAUDECODE", "CODEX_THREAD_ID", "CODEX_SANDBOX", "AFTERMATH_HOST")
+        }
+        try:
+            for key in saved:
+                os.environ.pop(key, None)
+            self.assertEqual(detect_host(), "opencode")
+
+            os.environ["CLAUDECODE"] = "1"
+            self.assertEqual(detect_host(), "claude")
+
+            del os.environ["CLAUDECODE"]
+            os.environ["CODEX_THREAD_ID"] = "abc"
+            self.assertEqual(detect_host(), "codex")
+
+            del os.environ["CODEX_THREAD_ID"]
+            os.environ["AFTERMATH_HOST"] = "codex"
+            self.assertEqual(detect_host(), "codex")
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+
+    def test_host_accepts_auto(self):
+        from afm.cli import cli
+
+        out = self.tmp / "host-auto"
+        out.mkdir()
+        code, err = run_cli_capture(["--host", "auto", "--dir", str(out), "--no-wire"])
+        self.assertEqual(code, 0, err)
+
+    # --- config merge --------------------------------------------------------
+    def test_merge_regenerates_empty_arrays(self):
+        from afm.config import merge_config
+
+        existing = {"testCommands": [], "safePaths": [], "stacks": ["node"]}
+        generated = {
+            "version": 1,
+            "defaultMode": "full",
+            "autoRevert": False,
+            "packageManager": "npm",
+            "stacks": ["node", "python"],
+            "testCommands": ["npm test"],
+            "buildCommands": [],
+            "safePaths": ["node_modules"],
+            "protectedPaths": [".git"],
+            "destructiveAllowlist": [],
+        }
+        merged = merge_config(existing, generated)
+        # Empty arrays are regenerated so a later init picks up new detections.
+        self.assertEqual(merged["testCommands"], ["npm test"])
+        self.assertEqual(merged["safePaths"], ["node_modules"])
+        # Non-empty user values are preserved.
+        self.assertEqual(merged["stacks"], ["node"])
+
     # --- end-to-end (python-only wiring against package assets) -----------------
     def test_cli_writes_config_and_rerun_preserves(self):
         from afm.cli import cli

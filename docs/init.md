@@ -42,11 +42,37 @@ wiring survives npm pruning `node_modules`. Files you have edited are never over
 | `--dir <path>` | Project directory (default: cwd). Walks up to `.git` or `.aftermath`. |
 | `--dry-run` | Print the config and actions; write and run nothing. |
 | `--no-wire` | Write config without installing host wiring. |
-| `--host <h>` | `opencode`, `claude`, `codex`, or `all` (default `all`). |
+| `--host <h>` | `auto` (default), `opencode`, `claude`, `codex`, or `all`. `auto` wires only the agent you are running in. |
 | `--run-tests` | Run the first detected test command once and write `.aftermath/baseline.json`. |
 | `--force` | Replace generated arrays instead of preserving existing ones. |
 | `--json` | Machine-readable output. |
 | `-h`, `--help` | Usage. |
+
+## Host wiring
+
+`init` wires **only the agent you are running in** — it never touches another
+agent's configuration:
+
+| Session | Detected host | Signal |
+|---------|---------------|--------|
+| OpenCode | `opencode` | default (no other signal present) |
+| Claude Code | `claude` | `CLAUDECODE` is set |
+| Codex | `codex` | `CODEX_THREAD_ID` / `CODEX_SANDBOX` is set |
+
+Override with `--host <h>` (e.g. `--host all` to wire every agent deliberately)
+or the `AFTERMATH_HOST` environment variable. Any Claude/Codex install
+triggered by `init` is written at **project scope** (`.claude/settings.json`),
+never into your global agent config.
+
+`aftermath-install` is the separate, explicit multi-agent installer: it still
+wires every detected agent at user scope.
+
+## Re-running init
+
+Re-running `init` is safe and cheap: existing non-empty values in
+`.aftermath/config.json` are preserved, while **empty** arrays (meaning
+"nothing detected yet") are regenerated — so a project that gains a test script
+or a `.gitignore` picks it up on the next plain `init`, without `--force`.
 
 ## Detection
 

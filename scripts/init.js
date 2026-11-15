@@ -57,6 +57,8 @@ const MANIFESTS = [
 
 const ALWAYS_PROTECTED = ['.git', '.env*', 'secrets*', '*.pem', '*.key'];
 
+const HOSTS = ['auto', 'opencode', 'claude', 'codex', 'all'];
+
 function usage() {
   return [
     'Usage: aftermath init [options]',
@@ -64,12 +66,28 @@ function usage() {
     '  --dir <path>      project directory (default: cwd)',
     '  --dry-run         print actions, write nothing',
     '  --no-wire         write config without installing host wiring',
-    '  --host <h>        opencode|claude|codex|all (default: all)',
+    '  --host <h>        auto|opencode|claude|codex|all (default: auto)',
     '  --run-tests       run the detected test command once and record a baseline',
     '  --force           replace generated arrays instead of preserving existing ones',
     '  --json            machine-readable output',
     '  -h, --help        this text',
+    '',
+    'auto wires only the agent you are running in (CLAUDECODE / CODEX_* env',
+    'signals, otherwise opencode). Override with AFTERMATH_HOST=<host>.',
   ].join('\n');
+}
+
+// Which agent is running this? Env signals only — no probing of other CLIs,
+// so init never touches another agent's configuration.
+function detectHost() {
+  const override = process.env.AFTERMATH_HOST;
+  if (override) {
+    const normalized = String(override).trim().toLowerCase();
+    if (HOSTS.includes(normalized) && normalized !== 'auto') return normalized;
+  }
+  if (process.env.CLAUDECODE) return 'claude';
+  if (process.env.CODEX_THREAD_ID || process.env.CODEX_SANDBOX) return 'codex';
+  return 'opencode';
 }
 
 function parseArgs(argv) {
@@ -77,7 +95,7 @@ function parseArgs(argv) {
     dir: null,
     dryRun: false,
     noWire: false,
-    host: 'all',
+    host: 'auto',
     runTests: false,
     force: false,
     json: false,
@@ -100,9 +118,8 @@ function parseArgs(argv) {
     else if (arg.startsWith('--')) throw new Error(`unknown flag: ${arg}`);
     else throw new Error(`unexpected argument: ${arg}`);
   }
-  const hosts = ['opencode', 'claude', 'codex', 'all'];
-  if (!hosts.includes(opts.host)) {
-    throw new Error(`--host must be one of: ${hosts.join('|')}`);
+  if (!HOSTS.includes(opts.host)) {
+    throw new Error(`--host must be one of: ${HOSTS.join('|')}`);
   }
   return opts;
 }
@@ -344,7 +361,12 @@ function mergeConfig(existing, generated, options = {}) {
     merged.packageManager = generated.packageManager;
   }
   for (const key of ['stacks', 'testCommands', 'buildCommands', 'safePaths']) {
-    if (force || !Array.isArray(merged[key])) merged[key] = generated[key];
+    // An empty array means "nothing detected yet" — regenerate it so a later
+    // init picks up newly detected values without --force.
+    const existing = merged[key];
+    if (force || !Array.isArray(existing) || existing.length === 0) {
+      merged[key] = generated[key];
+    }
   }
   if (force || !Array.isArray(merged.protectedPaths)) {
     merged.protectedPaths = generated.protectedPaths;
@@ -423,7 +445,9 @@ function wireProject(root, host, log) {
         log
       );
     }
-    install.printHostSteps({ host }, REPO_ROOT, log);
+    // project: true keeps any Claude/Codex install inside this project
+    // (.claude/settings.json) instead of the user's global agent config.
+    install.printHostSteps({ host, project: true }, REPO_ROOT, log);
   } finally {
     process.chdir(prevCwd);
   }
@@ -454,6 +478,7 @@ function main(argv) {
   const existing = readConfigFile(root);
   const config = mergeConfig(existing, generated, { force: opts.force });
   const actions = [];
+  const host = opts.host === 'auto' ? detectHost() : opts.host;
 
   if (opts.dryRun) {
     actions.push('would write .aftermath/config.json');
@@ -465,10 +490,10 @@ function main(argv) {
   if (opts.noWire) {
     actions.push('host wiring skipped');
   } else if (opts.dryRun) {
-    actions.push('would wire hosts: ' + opts.host);
+    actions.push('would wire hosts: ' + host);
   } else {
     const installLogs = [];
-    wireProject(root, opts.host, (message) => installLogs.push(message));
+    wireProject(root, host, (message) => installLogs.push(message));
     actions.push(...installLogs);
   }
 
@@ -520,7 +545,9 @@ if (require.main === module) {
 module.exports = {
   CONFIG_VERSION,
   ARTIFACT_NAMES,
+  HOSTS,
   parseArgs,
+  detectHost,
   findProjectRoot,
   detectPackageManager,
   detectProject,
